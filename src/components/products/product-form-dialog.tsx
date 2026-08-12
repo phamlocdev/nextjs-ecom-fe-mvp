@@ -1,15 +1,15 @@
-"use client";
+'use client'
 
-import { useEffect, useState, useTransition } from "react";
-import { Controller, useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Pencil, Plus, Save } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { toast } from "sonner";
-import { createProductAction, updateProductAction } from "@/app/actions";
-import { productFormSchema, type ProductFormInput, type ProductFormValues } from "@/lib/schemas";
-import type { Category, Product } from "@/lib/types";
-import { Button } from "@/components/ui/button";
+import { useEffect, useState, useTransition } from 'react'
+import { Controller, useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { Pencil, Plus, Save } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
+import { createProductAction, updateProductAction } from '@/app/actions'
+import { productFormSchema, type ProductFormInput, type ProductFormValues } from '@/lib/schemas'
+import type { Category, Product } from '@/lib/types'
+import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
@@ -17,45 +17,51 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Textarea } from '@/components/ui/textarea'
 
 const emptyProduct: ProductFormInput = {
-  name: "",
-  description: "",
-  categoryId: "",
+  name: '',
+  description: '',
+  categoryId: '',
   price: 1,
   imageUrl: undefined,
-  status: "ACTIVE",
-};
+  status: 'ACTIVE',
+}
 
 function actionErrorDescription(details?: string[]) {
-  return details && details.length > 0 ? details.join("\n") : undefined;
+  return details && details.length > 0 ? details.join('\n') : undefined
 }
 
 export function ProductFormDialog({
   product,
   categories,
 }: {
-  product?: Product;
-  categories: Category[];
+  product?: Product
+  categories: Category[]
 }) {
-  const router = useRouter();
-  const [open, setOpen] = useState(false);
-  const [isPending, startTransition] = useTransition();
-  const isEdit = Boolean(product);
+  const router = useRouter()
+  const [open, setOpen] = useState(false)
+  const [isPending, startTransition] = useTransition()
+  const isEdit = Boolean(product)
 
   const form = useForm<ProductFormInput, unknown, ProductFormValues>({
     resolver: zodResolver(productFormSchema),
     defaultValues: emptyProduct,
-  });
+  })
 
   useEffect(() => {
     if (!open) {
-      return;
+      return
     }
 
     form.reset(
@@ -68,77 +74,92 @@ export function ProductFormDialog({
             imageUrl: product.imageUrl,
             status: product.status,
           }
-        : emptyProduct
-    );
-  }, [form, open, product]);
+        : emptyProduct,
+    )
+  }, [form, open, product])
 
   function onSubmit(values: ProductFormValues) {
     startTransition(async () => {
       const result = product
         ? await updateProductAction(product.productId, values)
-        : await createProductAction(values);
+        : await createProductAction(values)
 
       if (!result.ok) {
-        toast.error(result.message, { description: actionErrorDescription(result.details) });
-        return;
+        toast.error(result.message, { description: actionErrorDescription(result.details) })
+        return
       }
 
-      toast.success(product ? "Product updated" : "Product created");
-      setOpen(false);
-      router.refresh();
-    });
+      toast.success(product ? 'Product updated' : 'Product created')
+      setOpen(false)
+      router.refresh()
+    })
   }
 
   return (
     <>
-      <Button variant={isEdit ? "ghost" : "default"} size={isEdit ? "icon-sm" : "default"} onClick={() => setOpen(true)}>
+      <Button
+        variant={isEdit ? 'ghost' : 'default'}
+        size={isEdit ? 'icon-sm' : 'default'}
+        onClick={() => setOpen(true)}
+      >
         {isEdit ? <Pencil /> : <Plus />}
-        <span className={isEdit ? "sr-only" : ""}>{isEdit ? "Edit product" : "New product"}</span>
+        <span className={isEdit ? 'sr-only' : ''}>{isEdit ? 'Edit product' : 'New product'}</span>
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+        <DialogContent className='max-h-[90vh] overflow-y-auto sm:max-w-2xl'>
           <DialogHeader>
-            <DialogTitle>{isEdit ? "Edit product" : "Create product"}</DialogTitle>
+            <DialogTitle>{isEdit ? 'Edit product' : 'Create product'}</DialogTitle>
             <DialogDescription>
-              Required fields follow the backend DTO: name, description, category, and integer VND price.
+              Required fields follow the backend DTO: name, description, category, and integer VND
+              price.
             </DialogDescription>
           </DialogHeader>
 
-          <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="name">Name</Label>
-                <Input id="name" aria-invalid={Boolean(form.formState.errors.name)} {...form.register("name")} />
+          <form className='space-y-4' onSubmit={form.handleSubmit(onSubmit)}>
+            <div className='grid gap-4 sm:grid-cols-2'>
+              <div className='space-y-2 sm:col-span-2'>
+                <Label htmlFor='name'>Name</Label>
+                <Input
+                  id='name'
+                  aria-invalid={Boolean(form.formState.errors.name)}
+                  {...form.register('name')}
+                />
                 {form.formState.errors.name ? (
-                  <p className="text-xs text-destructive">{form.formState.errors.name.message}</p>
+                  <p className='text-xs text-destructive'>{form.formState.errors.name.message}</p>
                 ) : null}
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="price">Price</Label>
+              <div className='space-y-2'>
+                <Label htmlFor='price'>Price</Label>
                 <Input
-                  id="price"
+                  id='price'
                   min={1}
                   step={1}
-                  type="number"
+                  type='number'
                   aria-invalid={Boolean(form.formState.errors.price)}
-                  {...form.register("price", { valueAsNumber: true })}
+                  {...form.register('price', { valueAsNumber: true })}
                 />
                 {form.formState.errors.price ? (
-                  <p className="text-xs text-destructive">{form.formState.errors.price.message}</p>
+                  <p className='text-xs text-destructive'>{form.formState.errors.price.message}</p>
                 ) : null}
               </div>
 
-              <div className="space-y-2">
+              <div className='space-y-2'>
                 <Label>Category</Label>
                 {categories.length > 0 ? (
                   <Controller
                     control={form.control}
-                    name="categoryId"
+                    name='categoryId'
                     render={({ field }) => (
-                      <Select value={field.value} onValueChange={(value) => field.onChange(value ?? "")}>
-                        <SelectTrigger className="h-9 w-full" aria-invalid={Boolean(form.formState.errors.categoryId)}>
-                          <SelectValue placeholder="Select category" />
+                      <Select
+                        value={field.value}
+                        onValueChange={(value) => field.onChange(value ?? '')}
+                      >
+                        <SelectTrigger
+                          className='h-9 w-full'
+                          aria-invalid={Boolean(form.formState.errors.categoryId)}
+                        >
+                          <SelectValue placeholder='Select category' />
                         </SelectTrigger>
                         <SelectContent>
                           {categories.map((category) => (
@@ -153,73 +174,87 @@ export function ProductFormDialog({
                 ) : (
                   <Input
                     aria-invalid={Boolean(form.formState.errors.categoryId)}
-                    placeholder="electronics"
-                    {...form.register("categoryId")}
+                    placeholder='electronics'
+                    {...form.register('categoryId')}
                   />
                 )}
                 {form.formState.errors.categoryId ? (
-                  <p className="text-xs text-destructive">{form.formState.errors.categoryId.message}</p>
+                  <p className='text-xs text-destructive'>
+                    {form.formState.errors.categoryId.message}
+                  </p>
                 ) : null}
               </div>
 
-              <div className="space-y-2">
+              <div className='space-y-2'>
                 <Label>Status</Label>
                 <Controller
                   control={form.control}
-                  name="status"
+                  name='status'
                   render={({ field }) => (
-                    <Select value={field.value} onValueChange={(value) => field.onChange(value ?? "ACTIVE")}>
-                      <SelectTrigger className="h-9 w-full">
+                    <Select
+                      value={field.value}
+                      onValueChange={(value) => field.onChange(value ?? 'ACTIVE')}
+                    >
+                      <SelectTrigger className='h-9 w-full'>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="ACTIVE">ACTIVE</SelectItem>
-                        <SelectItem value="INACTIVE">INACTIVE</SelectItem>
+                        <SelectItem value='ACTIVE'>ACTIVE</SelectItem>
+                        <SelectItem value='INACTIVE'>INACTIVE</SelectItem>
                       </SelectContent>
                     </Select>
                   )}
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="imageUrl">Image URL</Label>
+              <div className='space-y-2'>
+                <Label htmlFor='imageUrl'>Image URL</Label>
                 <Input
-                  id="imageUrl"
-                  placeholder="https://..."
+                  id='imageUrl'
+                  placeholder='https://...'
                   aria-invalid={Boolean(form.formState.errors.imageUrl)}
-                  {...form.register("imageUrl")}
+                  {...form.register('imageUrl')}
                 />
                 {form.formState.errors.imageUrl ? (
-                  <p className="text-xs text-destructive">{form.formState.errors.imageUrl.message}</p>
+                  <p className='text-xs text-destructive'>
+                    {form.formState.errors.imageUrl.message}
+                  </p>
                 ) : null}
               </div>
 
-              <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="description">Description</Label>
+              <div className='space-y-2 sm:col-span-2'>
+                <Label htmlFor='description'>Description</Label>
                 <Textarea
-                  id="description"
+                  id='description'
                   rows={5}
                   aria-invalid={Boolean(form.formState.errors.description)}
-                  {...form.register("description")}
+                  {...form.register('description')}
                 />
                 {form.formState.errors.description ? (
-                  <p className="text-xs text-destructive">{form.formState.errors.description.message}</p>
+                  <p className='text-xs text-destructive'>
+                    {form.formState.errors.description.message}
+                  </p>
                 ) : null}
               </div>
             </div>
 
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={isPending}>
+              <Button
+                type='button'
+                variant='outline'
+                onClick={() => setOpen(false)}
+                disabled={isPending}
+              >
                 Cancel
               </Button>
-              <Button type="submit" disabled={isPending}>
+              <Button type='submit' disabled={isPending}>
                 <Save />
-                {isPending ? "Saving..." : "Save"}
+                {isPending ? 'Saving...' : 'Save'}
               </Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
     </>
-  );
+  )
 }
