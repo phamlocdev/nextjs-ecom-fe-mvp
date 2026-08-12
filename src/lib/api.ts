@@ -1,6 +1,12 @@
 import "server-only";
 
-import type { ApiErrorPayload, Category, Product } from "@/lib/types";
+import type {
+  ApiErrorPayload,
+  Category,
+  PaginatedResponse,
+  PaginationParams,
+  Product,
+} from "@/lib/types";
 
 const API_BASE_URL = process.env.BACKEND_API_URL ?? "http://localhost:8000";
 
@@ -76,8 +82,35 @@ export function getBackendBaseUrl(): string {
   return API_BASE_URL;
 }
 
-export async function listProducts(): Promise<Product[]> {
-  return request<Product[]>("/products");
+function buildListPath(path: string, params: PaginationParams = {}): string {
+  const query = new URLSearchParams();
+
+  if (params.limit) {
+    query.set("limit", String(params.limit));
+  }
+  if (params.cursor) {
+    query.set("cursor", params.cursor);
+  }
+
+  const queryString = query.toString();
+  return queryString ? `${path}?${queryString}` : path;
+}
+
+export async function listProducts(params: PaginationParams = {}): Promise<PaginatedResponse<Product>> {
+  return request<PaginatedResponse<Product>>(buildListPath("/products", params));
+}
+
+export async function listAllProducts(): Promise<Product[]> {
+  const products: Product[] = [];
+  let cursor: string | undefined;
+
+  do {
+    const page = await listProducts({ limit: 50, cursor });
+    products.push(...page.items);
+    cursor = page.nextCursor ?? undefined;
+  } while (cursor);
+
+  return products;
 }
 
 export async function getProduct(productId: string): Promise<Product> {
@@ -107,8 +140,21 @@ export async function deleteProduct(productId: string): Promise<void> {
   });
 }
 
-export async function listCategories(): Promise<Category[]> {
-  return request<Category[]>("/categories");
+export async function listCategories(params: PaginationParams = {}): Promise<PaginatedResponse<Category>> {
+  return request<PaginatedResponse<Category>>(buildListPath("/categories", params));
+}
+
+export async function listAllCategories(): Promise<Category[]> {
+  const categories: Category[] = [];
+  let cursor: string | undefined;
+
+  do {
+    const page = await listCategories({ limit: 50, cursor });
+    categories.push(...page.items);
+    cursor = page.nextCursor ?? undefined;
+  } while (cursor);
+
+  return categories;
 }
 
 export async function getCategory(categoryId: string): Promise<Category> {

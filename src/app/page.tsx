@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Activity, AlertCircle, ArrowRight, Package, Tags } from "lucide-react";
-import { listCategories, listProducts } from "@/lib/api";
+import { listAllCategories, listAllProducts } from "@/lib/api";
 import { formatVnd, toErrorSummary } from "@/lib/format";
 import type { Category, Product } from "@/lib/types";
 import { ResourceError } from "@/components/resource-error";
@@ -18,7 +18,7 @@ async function safeLoad<T>(loader: () => Promise<T>) {
 }
 
 export default async function DashboardPage() {
-  const [productsResult, categoriesResult] = await Promise.all([safeLoad(listProducts), safeLoad(listCategories)]);
+  const [productsResult, categoriesResult] = await Promise.all([safeLoad(listAllProducts), safeLoad(listAllCategories)]);
 
   const products = productsResult.data ?? [];
   const categories = categoriesResult.data ?? [];

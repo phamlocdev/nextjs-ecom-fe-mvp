@@ -1,19 +1,28 @@
 import { listCategories } from "@/lib/api";
 import { toErrorSummary } from "@/lib/format";
-import type { Category } from "@/lib/types";
+import { parsePaginationSearchParams, type PageSearchParams } from "@/lib/pagination";
+import type { Category, PaginatedResponse } from "@/lib/types";
+import { PaginationControls } from "@/components/pagination/pagination-controls";
 import { CategoriesTable } from "@/components/categories/categories-table";
 import { CategoryFormDialog } from "@/components/categories/category-form-dialog";
 import { ResourceError } from "@/components/resource-error";
 
-export default async function CategoriesPage() {
-  let categories: Category[] = [];
+export default async function CategoriesPage({
+  searchParams,
+}: {
+  searchParams?: Promise<PageSearchParams>;
+}) {
+  const pagination = parsePaginationSearchParams((await searchParams) ?? {});
+  let categoriesPage: PaginatedResponse<Category> | null = null;
   let errorSummary: ReturnType<typeof toErrorSummary> | null = null;
 
   try {
-    categories = await listCategories();
+    categoriesPage = await listCategories(pagination);
   } catch (error) {
     errorSummary = toErrorSummary(error);
   }
+
+  const categories = categoriesPage?.items ?? [];
 
   return (
     <div className="space-y-6">
@@ -28,7 +37,17 @@ export default async function CategoriesPage() {
       {errorSummary ? (
         <ResourceError title="Categories endpoint error" message={errorSummary.message} details={errorSummary.details} />
       ) : (
-        <CategoriesTable categories={categories} />
+        <>
+          <CategoriesTable categories={categories} />
+          {categoriesPage ? (
+            <PaginationControls
+              limit={categoriesPage.limit}
+              currentPage={categoriesPage.currentPage}
+              previousCursor={categoriesPage.previousCursor}
+              nextCursor={categoriesPage.nextCursor}
+            />
+          ) : null}
+        </>
       )}
     </div>
   );

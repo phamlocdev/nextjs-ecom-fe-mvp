@@ -21,6 +21,23 @@ export type Category = {
   updatedAt: string;
 };
 
+export const PAGE_SIZE_OPTIONS = [10, 25, 50, 100, 200] as const;
+export type PageSize = (typeof PAGE_SIZE_OPTIONS)[number];
+export const DEFAULT_PAGE_SIZE: PageSize = 10;
+
+export type PaginationParams = {
+  limit?: PageSize;
+  cursor?: string;
+};
+
+export type PaginatedResponse<T> = {
+  items: T[];
+  previousCursor: string | null;
+  nextCursor: string | null;
+  limit: PageSize;
+  currentPage: number;
+};
+
 export type ApiErrorPayload = {
   statusCode?: number;
   message?: string | string[];
