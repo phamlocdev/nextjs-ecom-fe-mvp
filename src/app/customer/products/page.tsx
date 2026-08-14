@@ -3,9 +3,8 @@ import { toErrorSummary } from '@/lib/format'
 import { parsePaginationSearchParams, type PageSearchParams } from '@/lib/pagination'
 import type { Category, PaginatedResponse, Product, ProductFilterParams } from '@/lib/types'
 import { PaginationControls } from '@/components/pagination/pagination-controls'
-import { ProductFiltersDialog } from '@/components/products/product-filters-dialog'
-import { ProductFormDialog } from '@/components/products/product-form-dialog'
-import { ProductsTable } from '@/components/products/products-table'
+import { CustomerProductFilters } from '@/components/customer/customer-product-filters'
+import { CustomerProductsGrid } from '@/components/customer/customer-products-grid'
 import { ResourceError } from '@/components/resource-error'
 
 async function safeLoad<T>(loader: () => Promise<T>) {
@@ -16,48 +15,45 @@ async function safeLoad<T>(loader: () => Promise<T>) {
   }
 }
 
-export default async function ProductsPage({
+export default async function CustomerProductsPage({
   searchParams,
 }: {
   searchParams?: Promise<PageSearchParams>
 }) {
   const pagination = parsePaginationSearchParams((await searchParams) ?? {})
-  const [productsResult, categoriesResult] = await Promise.all([
-    safeLoad<PaginatedResponse<Product>>(() => listProducts(pagination)),
-    safeLoad<Category[]>(listAllCategories),
-  ])
-  const productsPage = productsResult.data
-  const products = productsPage?.items ?? []
-  const categories = categoriesResult.data ?? []
-  const filters: ProductFilterParams = {
+  const publicFilters: ProductFilterParams = {
     ...(pagination.categoryId ? { categoryId: pagination.categoryId } : {}),
-    ...(pagination.status ? { status: pagination.status } : {}),
     ...(pagination.minPrice !== undefined ? { minPrice: pagination.minPrice } : {}),
     ...(pagination.maxPrice !== undefined ? { maxPrice: pagination.maxPrice } : {}),
-    ...(pagination.updatedFrom ? { updatedFrom: pagination.updatedFrom } : {}),
-    ...(pagination.updatedTo ? { updatedTo: pagination.updatedTo } : {}),
     ...(pagination.q ? { q: pagination.q } : {}),
   }
 
+  const [productsResult, categoriesResult] = await Promise.all([
+    safeLoad<PaginatedResponse<Product>>(() =>
+      listProducts({ ...pagination, ...publicFilters, status: 'ACTIVE' }),
+    ),
+    safeLoad<Category[]>(listAllCategories),
+  ])
+
+  const productsPage = productsResult.data
+  const products = productsPage?.items ?? []
+  const categories = categoriesResult.data ?? []
+
   return (
-    <div className='space-y-6'>
-      <div className='flex flex-col justify-between gap-4 sm:flex-row sm:items-end'>
+    <div className='space-y-8'>
+      <section className='grid gap-6 rounded-[2rem] border bg-white/85 p-6 shadow-sm lg:grid-cols-[1.2fr_0.8fr] lg:p-8'>
         <div>
-          <h1 className='text-2xl font-semibold tracking-normal'>Products</h1>
-          <p className='mt-1 text-sm text-muted-foreground'>
-            Manage product records through the backend `/products` API.
+          <p className='text-sm uppercase tracking-[0.2em] text-amber-700'>Public storefront</p>
+          <h1 className='mt-3 text-4xl font-semibold tracking-tight text-balance'>
+            Browse active products without touching the admin workspace.
+          </h1>
+          <p className='mt-4 max-w-2xl text-sm leading-6 text-muted-foreground'>
+            This surface stays public while the admin console runs behind Cognito, API Gateway JWT
+            verification, and NestJS role checks.
           </p>
         </div>
-        <div className='flex flex-col gap-2 sm:flex-row sm:items-center'>
-          <ProductFiltersDialog
-            categories={categories}
-            filters={filters}
-            limit={pagination.limit}
-            scannedCount={productsPage?.scannedCount}
-          />
-          <ProductFormDialog categories={categories} />
-        </div>
-      </div>
+        <CustomerProductFilters categories={categories} filters={publicFilters} />
+      </section>
 
       {productsResult.error ? (
         <ResourceError
@@ -76,14 +72,14 @@ export default async function ProductsPage({
 
       {!productsResult.error ? (
         <>
-          <ProductsTable products={products} categories={categories} />
+          <CustomerProductsGrid products={products} categories={categories} />
           {productsPage ? (
             <PaginationControls
               limit={productsPage.limit}
               currentPage={productsPage.currentPage}
               previousCursor={productsPage.previousCursor}
               nextCursor={productsPage.nextCursor}
-              filters={filters}
+              filters={publicFilters}
             />
           ) : null}
         </>

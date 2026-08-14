@@ -54,5 +54,36 @@ export type ApiErrorPayload = {
   error?: string
 }
 
+export type AuthMethod = 'custom' | 'hosted-ui'
+
+export type UserSummary = {
+  sub: string
+  username: string
+  email?: string
+  groups: string[]
+}
+
+export type ManagedUser = {
+  username: string
+  enabled: boolean
+  status?: string
+  email?: string
+  emailVerified: boolean
+  groups: string[]
+  createdAt?: string
+  updatedAt?: string
+}
+
+export type AuthSession = {
+  authMethod: AuthMethod
+  accessToken: string
+  idToken: string
+  refreshToken: string
+  accessTokenExpiresAt: number
+  idTokenExpiresAt: number
+  refreshTokenExpiresAt: number
+  user: UserSummary
+}
+
 export type ActionResult<T = void> =
   { ok: true; data?: T } | { ok: false; message: string; details?: string[] }

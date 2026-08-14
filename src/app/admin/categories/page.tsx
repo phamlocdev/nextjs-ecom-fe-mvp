@@ -1,27 +1,30 @@
-import { listCategories } from '@/lib/api'
+import { listCategoriesAsAdmin } from '@/lib/api'
 import { toErrorSummary } from '@/lib/format'
 import { parsePaginationSearchParams, type PageSearchParams } from '@/lib/pagination'
 import type { Category, PaginatedResponse } from '@/lib/types'
-import { PaginationControls } from '@/components/pagination/pagination-controls'
 import { CategoriesTable } from '@/components/categories/categories-table'
 import { CategoryFormDialog } from '@/components/categories/category-form-dialog'
+import { PaginationControls } from '@/components/pagination/pagination-controls'
 import { ResourceError } from '@/components/resource-error'
 
-export default async function CategoriesPage({
+async function safeLoad<T>(loader: () => Promise<T>) {
+  try {
+    return { data: await loader(), error: null }
+  } catch (error) {
+    return { data: null, error: toErrorSummary(error) }
+  }
+}
+
+export default async function AdminCategoriesPage({
   searchParams,
 }: {
   searchParams?: Promise<PageSearchParams>
 }) {
   const pagination = parsePaginationSearchParams((await searchParams) ?? {})
-  let categoriesPage: PaginatedResponse<Category> | null = null
-  let errorSummary: ReturnType<typeof toErrorSummary> | null = null
-
-  try {
-    categoriesPage = await listCategories(pagination)
-  } catch (error) {
-    errorSummary = toErrorSummary(error)
-  }
-
+  const categoriesResult = await safeLoad<PaginatedResponse<Category>>(() =>
+    listCategoriesAsAdmin(pagination),
+  )
+  const categoriesPage = categoriesResult.data
   const categories = categoriesPage?.items ?? []
 
   return (
@@ -36,13 +39,15 @@ export default async function CategoriesPage({
         <CategoryFormDialog />
       </div>
 
-      {errorSummary ? (
+      {categoriesResult.error ? (
         <ResourceError
           title='Categories endpoint error'
-          message={errorSummary.message}
-          details={errorSummary.details}
+          message={categoriesResult.error.message}
+          details={categoriesResult.error.details}
         />
-      ) : (
+      ) : null}
+
+      {!categoriesResult.error ? (
         <>
           <CategoriesTable categories={categories} />
           {categoriesPage ? (
@@ -54,7 +59,7 @@ export default async function CategoriesPage({
             />
           ) : null}
         </>
-      )}
+      ) : null}
     </div>
   )
 }

@@ -22,9 +22,10 @@ function toActionError<T = void>(error: unknown): ActionResult<T> {
 }
 
 function revalidateAdminPages(): void {
-  revalidatePath('/')
-  revalidatePath('/products')
-  revalidatePath('/categories')
+  revalidatePath('/admin')
+  revalidatePath('/admin/products')
+  revalidatePath('/admin/categories')
+  revalidatePath('/customer/products')
 }
 
 export async function createProductAction(input: unknown): Promise<ActionResult<Product>> {

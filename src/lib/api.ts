@@ -1,8 +1,10 @@
 import 'server-only'
 
+import { ensureFreshAccessToken } from '@/lib/auth/cognito'
 import type {
   ApiErrorPayload,
   Category,
+  ManagedUser,
   PaginatedResponse,
   PaginationParams,
   Product,
@@ -54,6 +56,25 @@ async function readPayload(response: Response): Promise<unknown> {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  return requestInternal<T>(path, init)
+}
+
+async function requestAsAdmin<T>(path: string, init?: RequestInit): Promise<T> {
+  const session = await ensureFreshAccessToken()
+  if (!session) {
+    throw new BackendApiError(401, 'Your admin session has expired. Please sign in again.')
+  }
+
+  return requestInternal<T>(path, {
+    ...init,
+    headers: {
+      Authorization: `Bearer ${session.accessToken}`,
+      ...init?.headers,
+    },
+  })
+}
+
+async function requestInternal<T>(path: string, init?: RequestInit): Promise<T> {
   let response: Response
 
   try {
@@ -66,7 +87,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
       },
     })
   } catch {
-    throw new BackendApiError(0, 'Cannot reach backend API at http://localhost:8000')
+    throw new BackendApiError(0, `Cannot reach backend API at ${API_BASE_URL}`)
   }
 
   const payload = await readPayload(response)
@@ -143,7 +164,7 @@ export async function getProduct(productId: string): Promise<Product> {
 export async function createProduct(
   payload: Omit<Product, 'productId' | 'currency' | 'createdAt' | 'updatedAt'>,
 ): Promise<Product> {
-  return request<Product>('/products', {
+  return requestAsAdmin<Product>('/products', {
     method: 'POST',
     body: JSON.stringify(payload),
   })
@@ -153,14 +174,14 @@ export async function updateProduct(
   productId: string,
   payload: Partial<Omit<Product, 'productId' | 'currency' | 'createdAt' | 'updatedAt'>>,
 ): Promise<Product> {
-  return request<Product>(`/products/${encodeURIComponent(productId)}`, {
+  return requestAsAdmin<Product>(`/products/${encodeURIComponent(productId)}`, {
     method: 'PATCH',
     body: JSON.stringify(payload),
   })
 }
 
 export async function deleteProduct(productId: string): Promise<void> {
-  await request<void>(`/products/${encodeURIComponent(productId)}`, {
+  await requestAsAdmin<void>(`/products/${encodeURIComponent(productId)}`, {
     method: 'DELETE',
   })
 }
@@ -191,7 +212,7 @@ export async function getCategory(categoryId: string): Promise<Category> {
 export async function createCategory(
   payload: Pick<Category, 'categoryId' | 'name' | 'description'>,
 ): Promise<Category> {
-  return request<Category>('/categories', {
+  return requestAsAdmin<Category>('/categories', {
     method: 'POST',
     body: JSON.stringify(payload),
   })
@@ -201,14 +222,56 @@ export async function updateCategory(
   categoryId: string,
   payload: Partial<Pick<Category, 'name' | 'description'>>,
 ): Promise<Category> {
-  return request<Category>(`/categories/${encodeURIComponent(categoryId)}`, {
+  return requestAsAdmin<Category>(`/categories/${encodeURIComponent(categoryId)}`, {
     method: 'PATCH',
     body: JSON.stringify(payload),
   })
 }
 
 export async function deleteCategory(categoryId: string): Promise<void> {
-  await request<void>(`/categories/${encodeURIComponent(categoryId)}`, {
+  await requestAsAdmin<void>(`/categories/${encodeURIComponent(categoryId)}`, {
     method: 'DELETE',
   })
+}
+
+export async function listProductsAsAdmin(
+  params: PaginationParams = {},
+): Promise<PaginatedResponse<Product>> {
+  return requestAsAdmin<PaginatedResponse<Product>>(buildListPath('/products', params))
+}
+
+export async function listAllProductsAsAdmin(): Promise<Product[]> {
+  const products: Product[] = []
+  let cursor: string | undefined
+
+  do {
+    const page = await listProductsAsAdmin({ limit: 50, cursor })
+    products.push(...page.items)
+    cursor = page.nextCursor ?? undefined
+  } while (cursor)
+
+  return products
+}
+
+export async function listCategoriesAsAdmin(
+  params: PaginationParams = {},
+): Promise<PaginatedResponse<Category>> {
+  return requestAsAdmin<PaginatedResponse<Category>>(buildListPath('/categories', params))
+}
+
+export async function listAllCategoriesAsAdmin(): Promise<Category[]> {
+  const categories: Category[] = []
+  let cursor: string | undefined
+
+  do {
+    const page = await listCategoriesAsAdmin({ limit: 50, cursor })
+    categories.push(...page.items)
+    cursor = page.nextCursor ?? undefined
+  } while (cursor)
+
+  return categories
+}
+
+export async function listManagedUsersAsAdmin(): Promise<ManagedUser[]> {
+  return requestAsAdmin<ManagedUser[]>('/users')
 }
