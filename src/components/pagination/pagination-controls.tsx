@@ -1,17 +1,9 @@
 'use client'
 
-import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import {
-  DEFAULT_PAGE_SIZE,
-  PAGE_SIZE_OPTIONS,
-  type PageSize,
-  type ProductFilterParams,
-} from '@/lib/types'
-import { getPaginationHref, isPageSize } from '@/lib/pagination'
+import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS, type PageSize } from '@/lib/types'
 import { cn } from '@/lib/utils'
-import { buttonVariants } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import {
   Select,
   SelectContent,
@@ -25,7 +17,8 @@ type PaginationControlsProps = {
   currentPage: number
   previousCursor: string | null
   nextCursor: string | null
-  filters?: ProductFilterParams
+  onLimitChange: (limit: PageSize) => void
+  onCursorChange: (cursor: string | null) => void
 }
 
 export function PaginationControls({
@@ -33,15 +26,13 @@ export function PaginationControls({
   currentPage,
   previousCursor,
   nextCursor,
-  filters = {},
+  onLimitChange,
+  onCursorChange,
 }: PaginationControlsProps) {
-  const pathname = usePathname()
-  const router = useRouter()
-
   function handleLimitChange(value: string | null) {
     const nextLimit = Number(value ?? DEFAULT_PAGE_SIZE)
-    if (isPageSize(nextLimit)) {
-      router.push(getPaginationHref(pathname, { limit: nextLimit, ...filters }))
+    if (PAGE_SIZE_OPTIONS.includes(nextLimit as PageSize)) {
+      onLimitChange(nextLimit as PageSize)
     }
   }
 
@@ -65,13 +56,15 @@ export function PaginationControls({
 
       <div className='flex items-center justify-end gap-2'>
         {previousCursor ? (
-          <Link
-            href={getPaginationHref(pathname, { limit, cursor: previousCursor, ...filters })}
-            className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}
+          <Button
+            type='button'
+            variant='outline'
+            size='sm'
+            onClick={() => onCursorChange(previousCursor)}
           >
             <ChevronLeft />
             Previous
-          </Link>
+          </Button>
         ) : (
           <span
             aria-disabled='true'
@@ -90,13 +83,15 @@ export function PaginationControls({
         </span>
 
         {nextCursor ? (
-          <Link
-            href={getPaginationHref(pathname, { limit, cursor: nextCursor, ...filters })}
-            className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}
+          <Button
+            type='button'
+            variant='outline'
+            size='sm'
+            onClick={() => onCursorChange(nextCursor)}
           >
             Next
             <ChevronRight />
-          </Link>
+          </Button>
         ) : (
           <span
             aria-disabled='true'

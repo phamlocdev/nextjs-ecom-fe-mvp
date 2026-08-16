@@ -1,12 +1,12 @@
 'use client'
 
-import { useEffect, useState, useTransition } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Pencil, Plus, Save } from 'lucide-react'
-import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { createCategoryAction, updateCategoryAction } from '@/app/actions'
+import { useCreateCategoryMutation, useUpdateCategoryMutation } from '@/hooks/use-categories'
+import { apiErrorDescription, toApiClientError } from '@/lib/api/errors'
 import {
   categoryCreateSchema,
   type CategoryCreateInput,
@@ -32,15 +32,12 @@ const emptyCategory: CategoryCreateInput = {
   description: undefined,
 }
 
-function actionErrorDescription(details?: string[]) {
-  return details && details.length > 0 ? details.join('\n') : undefined
-}
-
 export function CategoryFormDialog({ category }: { category?: Category }) {
-  const router = useRouter()
   const [open, setOpen] = useState(false)
-  const [isPending, startTransition] = useTransition()
+  const createMutation = useCreateCategoryMutation()
+  const updateMutation = useUpdateCategoryMutation()
   const isEdit = Boolean(category)
+  const isPending = createMutation.isLoading || updateMutation.isLoading
 
   const form = useForm<CategoryCreateInput, unknown, CategoryCreateValues>({
     resolver: zodResolver(categoryCreateSchema),
@@ -63,21 +60,22 @@ export function CategoryFormDialog({ category }: { category?: Category }) {
     )
   }, [category, form, open])
 
-  function onSubmit(values: CategoryCreateValues) {
-    startTransition(async () => {
-      const result = category
-        ? await updateCategoryAction(category.categoryId, values)
-        : await createCategoryAction(values)
-
-      if (!result.ok) {
-        toast.error(result.message, { description: actionErrorDescription(result.details) })
-        return
+  async function onSubmit(values: CategoryCreateValues) {
+    try {
+      if (category) {
+        const input = {
+          name: values.name,
+          description: values.description,
+        }
+        await updateMutation.mutateAsync({ categoryId: category.categoryId, input })
+      } else {
+        await createMutation.mutateAsync(values)
       }
-
       toast.success(category ? 'Category updated' : 'Category created')
       setOpen(false)
-      router.refresh()
-    })
+    } catch (error) {
+      toast.error(toApiClientError(error).message, { description: apiErrorDescription(error) })
+    }
   }
 
   return (

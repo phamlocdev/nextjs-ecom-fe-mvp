@@ -1,31 +1,23 @@
-import { listCategoriesAsAdmin } from '@/lib/api'
-import { toErrorSummary } from '@/lib/format'
-import { parsePaginationSearchParams, type PageSearchParams } from '@/lib/pagination'
-import type { Category, PaginatedResponse } from '@/lib/types'
+'use client'
+
 import { CategoriesTable } from '@/components/categories/categories-table'
 import { CategoryFormDialog } from '@/components/categories/category-form-dialog'
 import { PaginationControls } from '@/components/pagination/pagination-controls'
 import { ResourceError } from '@/components/resource-error'
+import { Skeleton } from '@/components/ui/skeleton'
+import { useCatalogQueryParams } from '@/hooks/use-catalog-query-params'
+import { useCategoriesQuery } from '@/hooks/use-categories'
+import { toApiClientError } from '@/lib/api/errors'
 
-async function safeLoad<T>(loader: () => Promise<T>) {
-  try {
-    return { data: await loader(), error: null }
-  } catch (error) {
-    return { data: null, error: toErrorSummary(error) }
-  }
-}
-
-export default async function AdminCategoriesPage({
-  searchParams,
-}: {
-  searchParams?: Promise<PageSearchParams>
-}) {
-  const pagination = parsePaginationSearchParams((await searchParams) ?? {})
-  const categoriesResult = await safeLoad<PaginatedResponse<Category>>(() =>
-    listCategoriesAsAdmin(pagination),
-  )
+export default function CategoriesPage() {
+  const { limit, paginationParams, setCursor, setLimit } = useCatalogQueryParams()
+  const categoriesResult = useCategoriesQuery({
+    limit,
+    ...(paginationParams.cursor ? { cursor: paginationParams.cursor } : {}),
+  })
   const categoriesPage = categoriesResult.data
   const categories = categoriesPage?.items ?? []
+  const error = categoriesResult.error ? toApiClientError(categoriesResult.error) : null
 
   return (
     <div className='space-y-6'>
@@ -39,15 +31,17 @@ export default async function AdminCategoriesPage({
         <CategoryFormDialog />
       </div>
 
-      {categoriesResult.error ? (
+      {error ? (
         <ResourceError
           title='Categories endpoint error'
-          message={categoriesResult.error.message}
-          details={categoriesResult.error.details}
+          message={error.message}
+          details={error.details}
         />
       ) : null}
 
-      {!categoriesResult.error ? (
+      {categoriesResult.isLoading ? (
+        <CategoriesSkeleton />
+      ) : !error ? (
         <>
           <CategoriesTable categories={categories} />
           {categoriesPage ? (
@@ -56,10 +50,21 @@ export default async function AdminCategoriesPage({
               currentPage={categoriesPage.currentPage}
               previousCursor={categoriesPage.previousCursor}
               nextCursor={categoriesPage.nextCursor}
+              onLimitChange={setLimit}
+              onCursorChange={setCursor}
             />
           ) : null}
         </>
       ) : null}
+    </div>
+  )
+}
+
+function CategoriesSkeleton() {
+  return (
+    <div className='space-y-3'>
+      <Skeleton className='h-48 w-full' />
+      <Skeleton className='h-14 w-full' />
     </div>
   )
 }

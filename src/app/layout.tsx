@@ -1,6 +1,8 @@
+import { AppShell } from '@/components/layout/app-shell'
+import { Toaster } from '@/components/ui/sonner'
+import { AppProviders } from '@/providers/app-providers'
 import type { Metadata } from 'next'
 import { Geist_Mono } from 'next/font/google'
-import { Toaster } from '@/components/ui/sonner'
 import './globals.css'
 
 const geistMono = Geist_Mono({
@@ -21,8 +23,10 @@ export default function RootLayout({
   return (
     <html lang='vi' className={`${geistMono.variable} h-full antialiased`}>
       <body className='min-h-full bg-background text-foreground'>
-        {children}
-        <Toaster position='top-right' />
+        <AppProviders>
+          <AppShell>{children}</AppShell>
+          <Toaster position='top-right' />
+        </AppProviders>
       </body>
     </html>
   )

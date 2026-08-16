@@ -1,43 +1,25 @@
-import { listAllCategoriesAsAdmin, listProductsAsAdmin } from '@/lib/api'
-import { toErrorSummary } from '@/lib/format'
-import { parsePaginationSearchParams, type PageSearchParams } from '@/lib/pagination'
-import type { Category, PaginatedResponse, Product, ProductFilterParams } from '@/lib/types'
+'use client'
+
 import { PaginationControls } from '@/components/pagination/pagination-controls'
 import { ProductFiltersDialog } from '@/components/products/product-filters-dialog'
 import { ProductFormDialog } from '@/components/products/product-form-dialog'
 import { ProductsTable } from '@/components/products/products-table'
 import { ResourceError } from '@/components/resource-error'
+import { Skeleton } from '@/components/ui/skeleton'
+import { useCatalogQueryParams } from '@/hooks/use-catalog-query-params'
+import { useCategoriesQuery } from '@/hooks/use-categories'
+import { useProductsQuery } from '@/hooks/use-products'
+import { toApiClientError } from '@/lib/api/errors'
 
-async function safeLoad<T>(loader: () => Promise<T>) {
-  try {
-    return { data: await loader(), error: null }
-  } catch (error) {
-    return { data: null, error: toErrorSummary(error) }
-  }
-}
-
-export default async function AdminProductsPage({
-  searchParams,
-}: {
-  searchParams?: Promise<PageSearchParams>
-}) {
-  const pagination = parsePaginationSearchParams((await searchParams) ?? {})
-  const [productsResult, categoriesResult] = await Promise.all([
-    safeLoad<PaginatedResponse<Product>>(() => listProductsAsAdmin(pagination)),
-    safeLoad<Category[]>(listAllCategoriesAsAdmin),
-  ])
+export default function ProductsPage() {
+  const { filters, paginationParams, setCursor, setFilters, setLimit } = useCatalogQueryParams()
+  const productsResult = useProductsQuery(paginationParams)
+  const categoriesResult = useCategoriesQuery({ limit: 200 })
   const productsPage = productsResult.data
   const products = productsPage?.items ?? []
-  const categories = categoriesResult.data ?? []
-  const filters: ProductFilterParams = {
-    ...(pagination.categoryId ? { categoryId: pagination.categoryId } : {}),
-    ...(pagination.status ? { status: pagination.status } : {}),
-    ...(pagination.minPrice !== undefined ? { minPrice: pagination.minPrice } : {}),
-    ...(pagination.maxPrice !== undefined ? { maxPrice: pagination.maxPrice } : {}),
-    ...(pagination.updatedFrom ? { updatedFrom: pagination.updatedFrom } : {}),
-    ...(pagination.updatedTo ? { updatedTo: pagination.updatedTo } : {}),
-    ...(pagination.q ? { q: pagination.q } : {}),
-  }
+  const categories = categoriesResult.data?.items ?? []
+  const productsError = productsResult.error ? toApiClientError(productsResult.error) : null
+  const categoriesError = categoriesResult.error ? toApiClientError(categoriesResult.error) : null
 
   return (
     <div className='space-y-6'>
@@ -52,29 +34,31 @@ export default async function AdminProductsPage({
           <ProductFiltersDialog
             categories={categories}
             filters={filters}
-            limit={pagination.limit}
             scannedCount={productsPage?.scannedCount}
+            onApplyFilters={setFilters}
           />
           <ProductFormDialog categories={categories} />
         </div>
       </div>
 
-      {productsResult.error ? (
+      {productsError ? (
         <ResourceError
           title='Products endpoint error'
-          message={productsResult.error.message}
-          details={productsResult.error.details}
+          message={productsError.message}
+          details={productsError.details}
         />
       ) : null}
-      {categoriesResult.error ? (
+      {categoriesError ? (
         <ResourceError
           title='Categories endpoint error'
-          message={categoriesResult.error.message}
-          details={categoriesResult.error.details}
+          message={categoriesError.message}
+          details={categoriesError.details}
         />
       ) : null}
 
-      {!productsResult.error ? (
+      {productsResult.isLoading ? (
+        <ProductsSkeleton />
+      ) : !productsError ? (
         <>
           <ProductsTable products={products} categories={categories} />
           {productsPage ? (
@@ -83,11 +67,21 @@ export default async function AdminProductsPage({
               currentPage={productsPage.currentPage}
               previousCursor={productsPage.previousCursor}
               nextCursor={productsPage.nextCursor}
-              filters={filters}
+              onLimitChange={setLimit}
+              onCursorChange={setCursor}
             />
           ) : null}
         </>
       ) : null}
+    </div>
+  )
+}
+
+function ProductsSkeleton() {
+  return (
+    <div className='space-y-3'>
+      <Skeleton className='h-64 w-full' />
+      <Skeleton className='h-14 w-full' />
     </div>
   )
 }

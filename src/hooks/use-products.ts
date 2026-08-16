@@ -1,0 +1,58 @@
+import { useMutation, useQuery, useQueryClient } from 'react-query'
+import {
+  PRODUCT_QUERY_KEYS,
+  createProduct,
+  deleteProduct,
+  findAllProducts,
+  findProductById,
+  updateProduct,
+  type FindAllProductsQueryParams,
+} from '@/lib/api/products'
+import type { ProductFormValues } from '@/lib/schemas'
+
+export function useProductsQuery(params?: FindAllProductsQueryParams) {
+  return useQuery(PRODUCT_QUERY_KEYS.list(params), () => findAllProducts(params), {
+    keepPreviousData: true,
+  })
+}
+
+export function useProductQuery(productId: string) {
+  return useQuery(PRODUCT_QUERY_KEYS.detail(productId), () => findProductById(productId), {
+    enabled: Boolean(productId),
+  })
+}
+
+export function useCreateProductMutation() {
+  const queryClient = useQueryClient()
+
+  return useMutation((input: ProductFormValues) => createProduct(input), {
+    onSuccess: () => {
+      void queryClient.invalidateQueries(PRODUCT_QUERY_KEYS.lists())
+    },
+  })
+}
+
+export function useUpdateProductMutation() {
+  const queryClient = useQueryClient()
+
+  return useMutation(
+    ({ productId, input }: { productId: string; input: ProductFormValues }) =>
+      updateProduct(productId, input),
+    {
+      onSuccess: (product) => {
+        void queryClient.invalidateQueries(PRODUCT_QUERY_KEYS.lists())
+        void queryClient.invalidateQueries(PRODUCT_QUERY_KEYS.detail(product.productId))
+      },
+    },
+  )
+}
+
+export function useDeleteProductMutation() {
+  const queryClient = useQueryClient()
+
+  return useMutation((productId: string) => deleteProduct(productId), {
+    onSuccess: () => {
+      void queryClient.invalidateQueries(PRODUCT_QUERY_KEYS.lists())
+    },
+  })
+}

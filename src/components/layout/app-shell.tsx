@@ -1,134 +1,186 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { Boxes, LayoutDashboard, LogOut, Package, Store, Tags, Users } from 'lucide-react'
+import { usePathname, useRouter } from 'next/navigation'
+import { Boxes, LogOut, Package, PanelLeftClose, PanelLeftOpen, Store, Tags } from 'lucide-react'
+import { toast } from 'sonner'
+import { getClaimString, useAuthStore } from '@/store/auth-store'
 import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
+import { useState } from 'react'
 
 const navItems = [
-  { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/products', label: 'Products', icon: Package },
   { href: '/admin/categories', label: 'Categories', icon: Tags },
-  { href: '/admin/users', label: 'Users', icon: Users },
 ]
 
-export function AppShell({
-  children,
-  userLabel,
-  roleLabel,
-}: {
-  children: React.ReactNode
-  userLabel: string
-  roleLabel: string
-}) {
+export function AppShell({ children }: { children: React.ReactNode }) {
+  const [isSidebarExpanded, setIsSidebarExpanded] = useState(true)
   const pathname = usePathname()
+  const router = useRouter()
+  const { idTokenClaims, isAuthenticated, signOut } = useAuthStore()
+  const email = getClaimString(idTokenClaims, 'email')
+  const username = getClaimString(idTokenClaims, 'cognito:username')
+  const displayName = email ?? username
+  const isAdmin = hasRole(idTokenClaims, 'admin')
+
+  async function handleSignOut() {
+    try {
+      await signOut()
+      router.push('/auth/login')
+      router.refresh()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Unable to sign out')
+    }
+  }
 
   return (
     <div className='min-h-screen bg-background'>
-      <aside className='fixed inset-y-0 left-0 hidden w-72 border-r border-sidebar-border bg-sidebar text-sidebar-foreground lg:flex lg:flex-col'>
-        <div className='flex h-16 items-center gap-3 border-b border-sidebar-border px-5'>
-          <div className='flex size-9 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground'>
-            <Boxes className='size-5' />
-          </div>
-          <div>
-            <p className='text-sm font-semibold'>DynamoDB MVP</p>
-            <p className='text-xs text-sidebar-foreground/65'>Admin control surface</p>
-          </div>
-        </div>
-        <nav className='space-y-1 p-3'>
-          {navItems.map((item) => {
-            const Icon = item.icon
-            const isActive = pathname === item.href
-
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  'flex h-10 items-center gap-3 rounded-md px-3 text-sm font-medium transition-colors',
-                  isActive
-                    ? 'bg-sidebar-primary text-sidebar-primary-foreground'
-                    : 'text-sidebar-foreground/78 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
-                )}
-              >
-                <Icon className='size-4' />
-                {item.label}
-              </Link>
-            )
-          })}
-        </nav>
-
-        <div className='mt-auto border-t border-sidebar-border p-4'>
-          <p className='text-sm font-medium'>{userLabel}</p>
-          <p className='mt-1 text-xs uppercase tracking-[0.18em] text-sidebar-foreground/70'>
-            {roleLabel}
-          </p>
-          <div className='mt-4 flex flex-col gap-2'>
-            <Link
-              href='/customer/products'
-              className='flex items-center gap-2 rounded-md border border-sidebar-border/80 px-3 py-2 text-sm text-sidebar-foreground/80 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+      {isAdmin ? (
+        <aside
+          className={cn(
+            'fixed inset-y-0 left-0 hidden border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] lg:flex lg:flex-col',
+            isSidebarExpanded ? 'w-64' : 'w-20',
+          )}
+        >
+          <div className='flex h-16 items-center gap-3 border-b border-sidebar-border px-5'>
+            <div className='flex size-9 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground'>
+              <Boxes className='size-5' />
+            </div>
+            <div className={cn('min-w-0', !isSidebarExpanded && 'hidden')}>
+              <p className='text-sm font-semibold'>DynamoDB MVP</p>
+              <p className='text-xs text-sidebar-foreground/65'>Admin client</p>
+            </div>
+            <Button
+              type='button'
+              variant='ghost'
+              size='sm'
+              className={cn('ml-auto size-9 p-0', !isSidebarExpanded && 'ml-0')}
+              aria-label={isSidebarExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
+              title={isSidebarExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
+              onClick={() => setIsSidebarExpanded((current) => !current)}
             >
-              <Store className='size-4' />
-              View catalog
-            </Link>
-            <Link
-              href='/auth/logout'
-              className='flex items-center gap-2 rounded-md border border-sidebar-border/80 px-3 py-2 text-sm text-sidebar-foreground/80 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
-            >
-              <LogOut className='size-4' />
-              Sign out
-            </Link>
+              {isSidebarExpanded ? <PanelLeftClose /> : <PanelLeftOpen />}
+            </Button>
           </div>
-        </div>
-      </aside>
+          <nav className='space-y-1 p-3'>
+            <Link
+              href='/'
+              className={cn(
+                'flex h-10 items-center gap-3 rounded-md px-3 text-sm font-medium transition-colors',
+                pathname === '/'
+                  ? 'bg-sidebar-primary text-sidebar-primary-foreground'
+                  : 'text-sidebar-foreground/78 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+              )}
+            >
+              <Store className='size-4 shrink-0' />
+              <span className={cn(!isSidebarExpanded && 'sr-only')}>Catalog</span>
+            </Link>
+            <div
+              className={cn(
+                'px-3 py-2 text-xs font-medium text-sidebar-foreground/50',
+                !isSidebarExpanded && 'sr-only',
+              )}
+            >
+              Admin
+            </div>
+            {navItems.map((item) => {
+              const Icon = item.icon
+              const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`)
 
-      <div className='lg:pl-72'>
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    'flex h-10 items-center gap-3 rounded-md px-3 text-sm font-medium transition-colors',
+                    isActive
+                      ? 'bg-sidebar-primary text-sidebar-primary-foreground'
+                      : 'text-sidebar-foreground/78 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+                  )}
+                >
+                  <Icon className='size-4 shrink-0' />
+                  <span className={cn(!isSidebarExpanded && 'sr-only')}>{item.label}</span>
+                </Link>
+              )
+            })}
+          </nav>
+        </aside>
+      ) : null}
+
+      <div className={cn(isAdmin && (isSidebarExpanded ? 'lg:pl-64' : 'lg:pl-20'))}>
         <header className='sticky top-0 z-30 border-b bg-background/90 backdrop-blur'>
           <div className='flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8'>
-            <Link href='/admin' className='flex items-center gap-2 font-semibold lg:hidden'>
-              <Boxes className='size-5 text-primary' />
-              DynamoDB MVP Admin
+            <Link href='/' className='flex items-center gap-2 font-semibold lg:hidden'>
+              <Store className='size-5 text-primary' />
+              Catalog
             </Link>
-            <nav className='flex gap-1 lg:hidden'>
-              {navItems.map((item) => {
-                const Icon = item.icon
-                const isActive = pathname === item.href
+            {isAdmin ? (
+              <nav className='flex gap-1 lg:hidden'>
+                <Link
+                  href='/'
+                  aria-label='Catalog'
+                  title='Catalog'
+                  className={cn(
+                    'flex size-9 items-center justify-center rounded-md transition-colors',
+                    pathname === '/' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted',
+                  )}
+                >
+                  <Store className='size-4' />
+                </Link>
+                {navItems.map((item) => {
+                  const Icon = item.icon
+                  const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`)
 
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    aria-label={item.label}
-                    title={item.label}
-                    className={cn(
-                      'flex size-9 items-center justify-center rounded-md transition-colors',
-                      isActive ? 'bg-primary text-primary-foreground' : 'hover:bg-muted',
-                    )}
-                  >
-                    <Icon className='size-4' />
-                  </Link>
-                )
-              })}
-            </nav>
-            <div className='hidden items-center gap-4 text-sm lg:flex'>
-              <div className='text-right'>
-                <p className='font-medium text-foreground'>{userLabel}</p>
-                <p className='text-xs uppercase tracking-[0.18em] text-muted-foreground'>
-                  {roleLabel}
-                </p>
-              </div>
-              <Link
-                href='/auth/logout'
-                className='inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm font-medium transition-colors hover:bg-muted'
-              >
-                <LogOut className='size-4' />
-                Sign out
-              </Link>
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      aria-label={item.label}
+                      title={item.label}
+                      className={cn(
+                        'flex size-9 items-center justify-center rounded-md transition-colors',
+                        isActive ? 'bg-primary text-primary-foreground' : 'hover:bg-muted',
+                      )}
+                    >
+                      <Icon className='size-4' />
+                    </Link>
+                  )
+                })}
+              </nav>
+            ) : null}
+            <div className='hidden text-sm text-muted-foreground lg:block'>
+              {displayName ? (
+                <span className='font-medium text-foreground'>{displayName}</span>
+              ) : (
+                <span>Direct API Gateway client</span>
+              )}
             </div>
+            {isAuthenticated ? (
+              <Button type='button' variant='outline' size='sm' onClick={handleSignOut}>
+                <LogOut />
+                Sign out
+              </Button>
+            ) : null}
           </div>
         </header>
         <main className='px-4 py-6 sm:px-6 lg:px-8'>{children}</main>
       </div>
     </div>
   )
+}
+
+function hasRole(claims: Record<string, unknown> | null, role: string): boolean {
+  const groups = claims?.['cognito:groups']
+  const directRole = claims?.role ?? claims?.['custom:role']
+
+  if (Array.isArray(groups) && groups.some((value) => String(value).toLowerCase() === role)) {
+    return true
+  }
+
+  if (typeof directRole === 'string') {
+    return directRole.toLowerCase() === role
+  }
+
+  return false
 }

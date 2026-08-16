@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState } from 'react'
 import { Trash2 } from 'lucide-react'
-import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { deleteCategoryAction } from '@/app/actions'
+import { useDeleteCategoryMutation } from '@/hooks/use-categories'
+import { apiErrorDescription, toApiClientError } from '@/lib/api/errors'
 import type { Category } from '@/lib/types'
 import {
   AlertDialog,
@@ -20,26 +20,18 @@ import {
 import { Button } from '@/components/ui/button'
 
 export function DeleteCategoryDialog({ category }: { category: Category }) {
-  const router = useRouter()
   const [open, setOpen] = useState(false)
-  const [isPending, startTransition] = useTransition()
+  const deleteMutation = useDeleteCategoryMutation()
+  const isPending = deleteMutation.isLoading
 
-  function onDelete() {
-    startTransition(async () => {
-      const result = await deleteCategoryAction(category.categoryId)
-
-      if (!result.ok) {
-        toast.error(result.message, {
-          description:
-            result.details && result.details.length > 0 ? result.details.join('\n') : undefined,
-        })
-        return
-      }
-
+  async function onDelete() {
+    try {
+      await deleteMutation.mutateAsync(category.categoryId)
       toast.success('Category deleted')
       setOpen(false)
-      router.refresh()
-    })
+    } catch (error) {
+      toast.error(toApiClientError(error).message, { description: apiErrorDescription(error) })
+    }
   }
 
   return (
