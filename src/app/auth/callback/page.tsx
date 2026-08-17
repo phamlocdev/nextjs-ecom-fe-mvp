@@ -3,6 +3,7 @@
 import { useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
+import { completeHostedUiCallback } from '@/lib/auth'
 import { useAuthStore } from '@/store/auth-store'
 
 export default function AuthCallbackPage() {
@@ -13,7 +14,8 @@ export default function AuthCallbackPage() {
   useEffect(() => {
     const next = searchParams.get('next') || '/'
 
-    hydrate(true)
+    completeHostedUiCallback(window.location.href)
+      .then(() => hydrate(true))
       .then((session) => {
         if (session.isAuthenticated) {
           router.replace(next)
