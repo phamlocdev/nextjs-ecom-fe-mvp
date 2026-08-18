@@ -1,11 +1,9 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { usePathname, useRouter } from 'next/navigation'
 import { SlidersHorizontal } from 'lucide-react'
 import { toast } from 'sonner'
-import type { Category, PageSize, ProductFilterParams, ProductStatus } from '@/lib/types'
-import { getPaginationHref } from '@/lib/pagination'
+import type { Category, ProductFilterParams, ProductStatus } from '@/lib/types'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -52,8 +50,8 @@ type DraftResult =
 type ProductFiltersDialogProps = {
   categories: Category[]
   filters: ProductFilterParams
-  limit: PageSize
   scannedCount?: number
+  onApplyFilters: (filters: ProductFilterParams) => void
 }
 
 const sectionLabels: Array<{ id: FilterSection; label: string }> = [
@@ -67,21 +65,15 @@ const sectionLabels: Array<{ id: FilterSection; label: string }> = [
 export function ProductFiltersDialog({
   categories,
   filters,
-  limit,
   scannedCount,
+  onApplyFilters,
 }: ProductFiltersDialogProps) {
-  const pathname = usePathname()
-  const router = useRouter()
   const filtersKey = createFilterKey(filters)
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState<FilterDraft>(() => createDraftFromFilters(filters))
   const draftResult = useMemo(() => createFiltersFromDraft(draft), [draft])
   const draftKey = createFilterKey(draftResult.filters)
   const activeCount = countActiveFilters(filters)
-
-  useEffect(() => {
-    setDraft(createDraftFromFilters(filters))
-  }, [filters, filtersKey])
 
   useEffect(() => {
     const pendingKey = window.sessionStorage.getItem(FILTER_TOAST_KEY)
@@ -143,7 +135,7 @@ export function ProductFiltersDialog({
       window.sessionStorage.removeItem(FILTER_TOAST_KEY)
     }
 
-    router.push(getPaginationHref(pathname, { limit, ...draftResult.filters }))
+    onApplyFilters(draftResult.filters)
     setOpen(false)
   }
 
@@ -164,7 +156,15 @@ export function ProductFiltersDialog({
         <SlidersHorizontal />
         Filter {activeCount > 0 ? ` (${activeCount})` : ''}
       </Button>
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog
+        open={open}
+        onOpenChange={(nextOpen) => {
+          if (nextOpen) {
+            setDraft(createDraftFromFilters(filters))
+          }
+          setOpen(nextOpen)
+        }}
+      >
         <DialogContent className='max-h-[90vh] overflow-y-auto sm:max-w-3xl'>
           <DialogHeader>
             <DialogTitle>Product filters</DialogTitle>
@@ -513,21 +513,6 @@ function countActiveFilters(filters: ProductFilterParams): number {
     filters.updatedFrom || filters.updatedTo ? 'updated' : undefined,
     filters.q,
   ].filter((value) => value !== undefined && value !== '').length
-}
-
-function summarizeFilters(filters: ProductFilterParams, categories: Category[]): string {
-  const parts: string[] = []
-  if (filters.categoryId) {
-    parts.push(
-      categories.find((category) => category.categoryId === filters.categoryId)?.name ??
-        filters.categoryId,
-    )
-  }
-  if (filters.status) parts.push(filters.status)
-  if (filters.minPrice !== undefined || filters.maxPrice !== undefined) parts.push('price range')
-  if (filters.updatedFrom || filters.updatedTo) parts.push('updated range')
-  if (filters.q) parts.push(`"${filters.q}"`)
-  return parts.length > 0 ? parts.join(', ') : 'No active filters'
 }
 
 function readPrice(value: string): number | undefined {

@@ -1,44 +1,97 @@
-import Link from 'next/link'
+'use client'
 
-export default function HomePage() {
+import { useMemo, useState } from 'react'
+import { CatalogFilterSidebar } from '@/components/products/catalog-filter-sidebar'
+import {
+  CatalogProductList,
+  type ProductViewMode,
+} from '@/components/products/catalog-product-list'
+import { ResourceError } from '@/components/resource-error'
+import { Skeleton } from '@/components/ui/skeleton'
+import { useCatalogQueryParams } from '@/hooks/use-catalog-query-params'
+import { useCategoriesQuery } from '@/hooks/use-categories'
+import { useInfiniteProductsQuery } from '@/hooks/use-infinite-products'
+import { toApiClientError } from '@/lib/api/errors'
+
+export default function ProductCatalogPage() {
+  const [viewMode, setViewMode] = useState<ProductViewMode>('grid')
+  const { filters, limit, setFilters } = useCatalogQueryParams()
+  const productsResult = useInfiniteProductsQuery({ limit, ...filters })
+  const categoriesResult = useCategoriesQuery({ limit: 200 })
+  const products = useMemo(
+    () => productsResult.data?.pages.flatMap((page) => page.items) ?? [],
+    [productsResult.data],
+  )
+  const categories = categoriesResult.data?.items ?? []
+  const productsError = productsResult.error ? toApiClientError(productsResult.error) : null
+  const categoriesError = categoriesResult.error ? toApiClientError(categoriesResult.error) : null
+
   return (
-    <main className='min-h-screen bg-[radial-gradient(circle_at_top,_rgba(251,191,36,0.16),_transparent_35%),linear-gradient(180deg,_#fffef8_0%,_#ffffff_45%)] px-4 py-10 sm:px-6 lg:px-8'>
-      <div className='mx-auto grid max-w-7xl gap-6 lg:grid-cols-[1.1fr_0.9fr]'>
-        <section className='rounded-[2rem] border bg-white/88 p-8 shadow-sm lg:p-10'>
-          <p className='text-sm uppercase tracking-[0.2em] text-amber-700'>DynamoDB MVP</p>
-          <h1 className='mt-4 text-5xl font-semibold tracking-tight text-balance'>
-            Customer storefront and protected admin console in one Next.js app.
-          </h1>
-          <p className='mt-5 max-w-2xl text-base leading-7 text-muted-foreground'>
-            Browse the public catalog as a customer, or sign into the admin area to manage
-            products and categories through Cognito, API Gateway, Lambda, and NestJS RBAC.
+    <div className='space-y-6'>
+      <div className='flex flex-col justify-between gap-3 sm:flex-row sm:items-end'>
+        <div>
+          <h1 className='text-2xl font-semibold tracking-normal'>Product Catalog</h1>
+          <p className='mt-1 text-sm text-muted-foreground'>
+            Browse products and narrow the catalog with filters.
           </p>
-          <div className='mt-8 flex flex-wrap gap-3'>
-            <Link
-              href='/customer/products'
-              className='inline-flex items-center rounded-full bg-foreground px-5 py-3 text-sm font-medium text-background transition-opacity hover:opacity-90'
-            >
-              Enter catalog
-            </Link>
-            <Link
-              href='/admin'
-              className='inline-flex items-center rounded-full border px-5 py-3 text-sm font-medium transition-colors hover:bg-muted'
-            >
-              Open admin
-            </Link>
-          </div>
-        </section>
-
-        <section className='rounded-[2rem] border bg-slate-950 p-8 text-white shadow-sm'>
-          <p className='text-sm uppercase tracking-[0.2em] text-white/60'>What changed</p>
-          <ul className='mt-5 space-y-4 text-sm leading-6 text-white/76'>
-            <li>Public `/customer/products` catalog with filters, pagination, and detail pages</li>
-            <li>Protected `/admin` workspace with Cognito-backed session management</li>
-            <li>Dual login paths: Hosted UI and custom credential form</li>
-            <li>JWT verification at API Gateway plus role enforcement inside NestJS</li>
-          </ul>
-        </section>
+        </div>
       </div>
-    </main>
+
+      {productsError ? (
+        <ResourceError
+          title='Products endpoint error'
+          message={productsError.message}
+          details={productsError.details}
+        />
+      ) : null}
+      {categoriesError ? (
+        <ResourceError
+          title='Categories endpoint error'
+          message={categoriesError.message}
+          details={categoriesError.details}
+        />
+      ) : null}
+
+      <div className='grid gap-6 lg:grid-cols-12'>
+        <div className='lg:col-span-3'>
+          <CatalogFilterSidebar
+            categories={categories}
+            filters={filters}
+            onFiltersChange={setFilters}
+          />
+        </div>
+        <div className='lg:col-span-9'>
+          {productsResult.isLoading ? (
+            <CatalogSkeleton />
+          ) : !productsError ? (
+            <CatalogProductList
+              products={products}
+              categories={categories}
+              viewMode={viewMode}
+              isFetchingMore={productsResult.isFetchingNextPage}
+              hasMore={Boolean(productsResult.hasNextPage)}
+              onViewModeChange={setViewMode}
+              onViewMore={() => void productsResult.fetchNextPage()}
+            />
+          ) : null}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function CatalogSkeleton() {
+  return (
+    <div className='space-y-4'>
+      <div className='flex justify-between gap-3'>
+        <Skeleton className='h-12 w-48' />
+        <Skeleton className='h-10 w-44' />
+      </div>
+      <div className='grid gap-4 sm:grid-cols-2 xl:grid-cols-3'>
+        {Array.from({ length: 6 }).map((_, index) => (
+          <Skeleton key={index} className='h-80 w-full' />
+        ))}
+      </div>
+    </div>
   )
 }

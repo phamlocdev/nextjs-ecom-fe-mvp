@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState } from 'react'
 import { Trash2 } from 'lucide-react'
-import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { deleteProductAction } from '@/app/actions'
+import { apiErrorDescription, toApiClientError } from '@/lib/api/errors'
+import { useDeleteProductMutation } from '@/hooks/use-products'
 import type { Product } from '@/lib/types'
 import {
   AlertDialog,
@@ -20,26 +20,18 @@ import {
 import { Button } from '@/components/ui/button'
 
 export function DeleteProductDialog({ product }: { product: Product }) {
-  const router = useRouter()
   const [open, setOpen] = useState(false)
-  const [isPending, startTransition] = useTransition()
+  const deleteMutation = useDeleteProductMutation()
+  const isPending = deleteMutation.isLoading
 
-  function onDelete() {
-    startTransition(async () => {
-      const result = await deleteProductAction(product.productId)
-
-      if (!result.ok) {
-        toast.error(result.message, {
-          description:
-            result.details && result.details.length > 0 ? result.details.join('\n') : undefined,
-        })
-        return
-      }
-
+  async function onDelete() {
+    try {
+      await deleteMutation.mutateAsync(product.productId)
       toast.success('Product deleted')
       setOpen(false)
-      router.refresh()
-    })
+    } catch (error) {
+      toast.error(toApiClientError(error).message, { description: apiErrorDescription(error) })
+    }
   }
 
   return (

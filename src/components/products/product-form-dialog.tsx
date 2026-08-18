@@ -1,14 +1,14 @@
 'use client'
 
-import { useEffect, useState, useTransition } from 'react'
+import { useEffect, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Pencil, Plus, Save } from 'lucide-react'
-import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { createProductAction, updateProductAction } from '@/app/actions'
+import { apiErrorDescription, toApiClientError } from '@/lib/api/errors'
 import { productFormSchema, type ProductFormInput, type ProductFormValues } from '@/lib/schemas'
 import type { Category, Product } from '@/lib/types'
+import { useCreateProductMutation, useUpdateProductMutation } from '@/hooks/use-products'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -38,10 +38,6 @@ const emptyProduct: ProductFormInput = {
   status: 'ACTIVE',
 }
 
-function actionErrorDescription(details?: string[]) {
-  return details && details.length > 0 ? details.join('\n') : undefined
-}
-
 export function ProductFormDialog({
   product,
   categories,
@@ -49,10 +45,11 @@ export function ProductFormDialog({
   product?: Product
   categories: Category[]
 }) {
-  const router = useRouter()
   const [open, setOpen] = useState(false)
-  const [isPending, startTransition] = useTransition()
+  const createMutation = useCreateProductMutation()
+  const updateMutation = useUpdateProductMutation()
   const isEdit = Boolean(product)
+  const isPending = createMutation.isLoading || updateMutation.isLoading
 
   const form = useForm<ProductFormInput, unknown, ProductFormValues>({
     resolver: zodResolver(productFormSchema),
@@ -78,21 +75,18 @@ export function ProductFormDialog({
     )
   }, [form, open, product])
 
-  function onSubmit(values: ProductFormValues) {
-    startTransition(async () => {
-      const result = product
-        ? await updateProductAction(product.productId, values)
-        : await createProductAction(values)
-
-      if (!result.ok) {
-        toast.error(result.message, { description: actionErrorDescription(result.details) })
-        return
+  async function onSubmit(values: ProductFormValues) {
+    try {
+      if (product) {
+        await updateMutation.mutateAsync({ productId: product.productId, input: values })
+      } else {
+        await createMutation.mutateAsync(values)
       }
-
       toast.success(product ? 'Product updated' : 'Product created')
       setOpen(false)
-      router.refresh()
-    })
+    } catch (error) {
+      toast.error(toApiClientError(error).message, { description: apiErrorDescription(error) })
+    }
   }
 
   return (
