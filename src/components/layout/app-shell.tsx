@@ -161,7 +161,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <LogOut />
                 Sign out
               </Button>
-            ) : null}
+            ) : (
+              <Link href='/auth/login' className='text-sm font-medium text-primary hover:underline'>
+                Sign in
+              </Link>
+            )}
           </div>
         </header>
         <main className='px-4 py-6 sm:px-6 lg:px-8'>{children}</main>
