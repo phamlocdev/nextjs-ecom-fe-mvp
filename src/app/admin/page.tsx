@@ -1,35 +1,33 @@
+'use client'
+
 import Link from 'next/link'
+import type { ComponentType } from 'react'
 import { Activity, AlertCircle, ArrowRight, Package, Tags } from 'lucide-react'
-import { listAllCategoriesAsAdmin, listAllProductsAsAdmin } from '@/lib/api'
-import { formatVnd, toErrorSummary } from '@/lib/format'
+import { formatVnd } from '@/lib/format'
 import type { Category, Product } from '@/lib/types'
 import { ResourceError } from '@/components/resource-error'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { useProductsQuery } from '@/hooks/use-products'
+import { useCategoriesQuery } from '@/hooks/use-categories'
+import { toApiClientError } from '@/lib/api/errors'
 
-async function safeLoad<T>(loader: () => Promise<T>) {
-  try {
-    return { data: await loader(), error: null }
-  } catch (error) {
-    return { data: null, error: toErrorSummary(error) }
-  }
-}
+export default function AdminDashboardPage() {
+  const productsResult = useProductsQuery()
+  const categoriesResult = useCategoriesQuery()
 
-export default async function AdminDashboardPage() {
-  const [productsResult, categoriesResult] = await Promise.all([
-    safeLoad(listAllProductsAsAdmin),
-    safeLoad(listAllCategoriesAsAdmin),
-  ])
-
-  const products = productsResult.data ?? []
-  const categories = categoriesResult.data ?? []
+  const products = productsResult.data?.items ?? []
+  const categories = categoriesResult.data?.items ?? []
   const activeProducts = products.filter((product) => product.status === 'ACTIVE').length
   const inventoryValue = products.reduce((sum, product) => sum + product.price, 0)
   const orphanProducts = products.filter(
     (product) => !categories.some((category) => category.categoryId === product.categoryId),
   ).length
+
+  const productsError = productsResult.error ? toApiClientError(productsResult.error) : null
+  const categoriesError = categoriesResult.error ? toApiClientError(categoriesResult.error) : null
 
   return (
     <div className='space-y-6'>
@@ -52,18 +50,18 @@ export default async function AdminDashboardPage() {
         </div>
       </div>
 
-      {productsResult.error ? (
+      {productsError ? (
         <ResourceError
           title='Products endpoint error'
-          message={productsResult.error.message}
-          details={productsResult.error.details}
+          message={productsError.message}
+          details={productsError.details}
         />
       ) : null}
-      {categoriesResult.error ? (
+      {categoriesError ? (
         <ResourceError
           title='Categories endpoint error'
-          message={categoriesResult.error.message}
-          details={categoriesResult.error.details}
+          message={categoriesError.message}
+          details={categoriesError.details}
         />
       ) : null}
 
@@ -111,7 +109,7 @@ function MetricCard({
   title: string
   value: string
   detail: string
-  icon: React.ComponentType<{ className?: string }>
+  icon: ComponentType<{ className?: string }>
 }) {
   return (
     <Card>
