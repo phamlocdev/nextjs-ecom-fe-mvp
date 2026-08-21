@@ -1,4 +1,7 @@
 export type ProductStatus = 'ACTIVE' | 'INACTIVE'
+export type CartStatus = 'ACTIVE' | 'EXPIRED'
+export type OrderStatus = 'PENDING' | 'RESERVED' | 'CONFIRMED' | 'CANCELLED' | 'FAILED' | 'EXPIRED'
+export type PaymentStatus = 'NOT_STARTED' | 'PROCESSING' | 'PAID' | 'FAILED'
 
 export type Product = {
   productId: string
@@ -19,6 +22,73 @@ export type Category = {
   description?: string
   createdAt: string
   updatedAt: string
+}
+
+export type Cart = {
+  customerId: string
+  cartId: string
+  status: CartStatus
+  createdAt: string
+  updatedAt: string
+  expiresAt: number
+}
+
+export type CartItem = {
+  cartId: string
+  customerId: string
+  productId: string
+  quantity: number
+  createdAt: string
+  updatedAt: string
+}
+
+export type CartDetails = Cart & {
+  items: CartItem[]
+}
+
+export type Order = {
+  orderId: string
+  customerId: string
+  customerEmail?: string
+  customerName?: string
+  cartId: string
+  status: OrderStatus
+  paymentStatus: PaymentStatus
+  createdAt: string
+  updatedAt: string
+  reservedAt?: string
+  paymentRequestedAt?: string
+  paidAt?: string
+  paymentTransactionId?: string
+  paymentFailureReason?: string
+  failureReason?: string
+  totalAmount?: number
+}
+
+export type OrderItem = {
+  lineId: string
+  orderId: string
+  productId: string
+  productName: string
+  imageUrl?: string
+  unitPrice: number
+  quantity: number
+  lineTotal: number
+  createdAt: string
+}
+
+export type OrderDetails = Order & {
+  items: OrderItem[]
+}
+
+export type PlaceOrderResponse = {
+  orderId: string
+  status: OrderStatus
+}
+
+export type TriggerPaymentResponse = {
+  orderId: string
+  paymentStatus: PaymentStatus
 }
 
 export const PAGE_SIZE_OPTIONS = [10, 25, 50, 100, 200] as const

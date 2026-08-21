@@ -1,8 +1,11 @@
 'use client'
 
 import Link from 'next/link'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { ArrowLeft, CheckCircle2, ShoppingCart, Zap } from 'lucide-react'
+import { toast } from 'sonner'
+import { useActiveCart } from '@/hooks/use-active-cart'
+import { useAddCartItemMutation } from '@/hooks/use-carts'
 import { ResourceError } from '@/components/resource-error'
 import { Badge } from '@/components/ui/badge'
 import { Button, buttonVariants } from '@/components/ui/button'
@@ -12,10 +15,15 @@ import { useProductQuery } from '@/hooks/use-products'
 import { toApiClientError } from '@/lib/api/errors'
 import { formatDateTime, formatVnd } from '@/lib/format'
 import { cn } from '@/lib/utils'
+import { useAuthStore } from '@/store/auth-store'
 
 export default function ProductDetailPage() {
+  const router = useRouter()
   const params = useParams<{ id: string }>()
   const productId = params.id
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+  const { ensureActiveCart } = useActiveCart()
+  const addCartItemMutation = useAddCartItemMutation()
   const productResult = useProductQuery(productId)
   const categoriesResult = useCategoriesQuery({ limit: 200 })
   const product = productResult.data
@@ -48,6 +56,32 @@ export default function ProductDetailPage() {
         </Link>
       </div>
     )
+  }
+
+  const resolvedProduct = product
+
+  async function handleAddToCart(redirectToCheckout = false) {
+    if (!isAuthenticated) {
+      router.push(`/auth/login?next=${encodeURIComponent(`/products/${productId}`)}`)
+      return
+    }
+
+    try {
+      const cartId = await ensureActiveCart()
+      await addCartItemMutation.mutateAsync({
+        cartId,
+        productId: resolvedProduct.productId,
+        quantity: 1,
+      })
+      toast.success(`${resolvedProduct.name} added to cart`)
+
+      if (redirectToCheckout) {
+        router.push('/checkout')
+      }
+    } catch (error) {
+      const normalized = toApiClientError(error)
+      toast.error(normalized.message)
+    }
   }
 
   return (
@@ -83,11 +117,11 @@ export default function ProductDetailPage() {
                 {product.status}
               </Badge>
               <span className='text-sm text-muted-foreground'>
-                {category?.name ?? product.categoryId}
+              {category?.name ?? product.categoryId}
               </span>
             </div>
-            <h1 className='text-3xl font-semibold tracking-normal'>{product.name}</h1>
-            <p className='text-3xl font-semibold'>{formatVnd(product.price)}</p>
+            <h1 className='text-3xl font-semibold tracking-normal'>{resolvedProduct.name}</h1>
+            <p className='text-3xl font-semibold'>{formatVnd(resolvedProduct.price)}</p>
           </div>
 
           <div className='space-y-3 border-y py-5'>
@@ -95,15 +129,24 @@ export default function ProductDetailPage() {
               <CheckCircle2 className='size-4 text-primary' />
               <span>Ready for checkout</span>
             </div>
-            <p className='text-sm leading-6 text-muted-foreground'>{product.description}</p>
+            <p className='text-sm leading-6 text-muted-foreground'>{resolvedProduct.description}</p>
           </div>
 
           <div className='grid gap-3 sm:grid-cols-2'>
-            <Button size='lg' disabled={product.status !== 'ACTIVE'}>
+            <Button
+              size='lg'
+              disabled={product.status !== 'ACTIVE' || addCartItemMutation.isLoading}
+              onClick={() => void handleAddToCart(true)}
+            >
               <Zap />
               Buy now
             </Button>
-            <Button size='lg' variant='outline' disabled={product.status !== 'ACTIVE'}>
+            <Button
+              size='lg'
+              variant='outline'
+              disabled={product.status !== 'ACTIVE' || addCartItemMutation.isLoading}
+              onClick={() => void handleAddToCart(false)}
+            >
               <ShoppingCart />
               Add to cart
             </Button>
