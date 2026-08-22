@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
-import { CreditCard, RefreshCcw } from 'lucide-react'
+import { CreditCard } from 'lucide-react'
 import { toast } from 'sonner'
 import { ResourceError } from '@/components/resource-error'
 import { OrderStatusBadge, PaymentStatusBadge } from '@/components/customer/order-status-badges'
@@ -20,7 +20,7 @@ export default function OrderPaymentPage() {
   const { isAuthenticated, isHydrating } = useRequireAuth()
   const params = useParams<{ orderId: string }>()
   const orderId = params.orderId
-  const orderResult = useOrderQuery(orderId, { pollPayment: true })
+  const orderResult = useOrderQuery(orderId)
   const triggerPaymentMutation = useTriggerPaymentMutation()
   const orderError = orderResult.error ? toApiClientError(orderResult.error) : null
 
@@ -42,8 +42,10 @@ export default function OrderPaymentPage() {
   async function handleTriggerPayment() {
     try {
       await triggerPaymentMutation.mutateAsync(order.orderId)
-      toast.success('Mock payment started. Waiting for confirmation...')
       await orderResult.refetch()
+      toast.success('Payment completed successfully.')
+      router.replace(`/orders/${encodeURIComponent(order.orderId)}`)
+      router.refresh()
     } catch (error) {
       toast.error(toApiClientError(error).message)
     }
@@ -52,9 +54,9 @@ export default function OrderPaymentPage() {
   return (
     <div className='mx-auto max-w-2xl space-y-6'>
       <div className='space-y-2 text-center'>
-        <h1 className='text-3xl font-semibold tracking-normal'>Payment mock</h1>
+        <h1 className='text-3xl font-semibold tracking-normal'>Complete payment</h1>
         <p className='text-sm text-muted-foreground'>
-          Complete the mocked payment flow for order {order.orderId}.
+          Confirm payment for order {order.orderId}. The order will be marked as paid immediately.
         </p>
       </div>
 
@@ -88,11 +90,6 @@ export default function OrderPaymentPage() {
               {order.paymentFailureReason}
             </div>
           ) : null}
-          {order.paymentStatus === 'PROCESSING' ? (
-            <div className='rounded-lg border bg-muted/40 p-3 text-muted-foreground'>
-              Payment is processing. This page polls every 2 seconds until the result is ready.
-            </div>
-          ) : null}
         </CardContent>
         <CardFooter className='flex-col gap-3'>
           {order.status === 'CONFIRMED' ? (
@@ -103,20 +100,15 @@ export default function OrderPaymentPage() {
             <Button
               type='button'
               className='w-full'
-              disabled={!canTriggerPayment || triggerPaymentMutation.isLoading || order.paymentStatus === 'PROCESSING'}
+              disabled={!canTriggerPayment || triggerPaymentMutation.isLoading}
               onClick={() => void handleTriggerPayment()}
             >
-              {order.paymentStatus === 'PROCESSING' ? (
-                <>
-                  <RefreshCcw />
-                  Processing payment...
-                </>
-              ) : (
-                <>
-                  <CreditCard />
-                  {order.paymentStatus === 'FAILED' ? 'Retry payment' : 'Complete payment'}
-                </>
-              )}
+              <CreditCard />
+              {triggerPaymentMutation.isLoading
+                ? 'Completing payment...'
+                : order.paymentStatus === 'FAILED'
+                  ? 'Retry payment'
+                  : 'Complete payment'}
             </Button>
           )}
           <Link

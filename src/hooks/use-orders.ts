@@ -52,9 +52,11 @@ export function useTriggerPaymentMutation() {
   const queryClient = useQueryClient()
 
   return useMutation((orderId: string) => triggerOrderPayment(orderId), {
-    onSuccess: (response) => {
-      void queryClient.invalidateQueries(ORDER_QUERY_KEYS.lists())
-      void queryClient.invalidateQueries(ORDER_QUERY_KEYS.detail(response.orderId))
+    onSuccess: async (response) => {
+      await Promise.all([
+        queryClient.invalidateQueries(ORDER_QUERY_KEYS.lists()),
+        queryClient.invalidateQueries(ORDER_QUERY_KEYS.detail(response.orderId)),
+      ])
     },
   })
 }
