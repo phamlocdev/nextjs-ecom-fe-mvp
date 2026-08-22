@@ -8,6 +8,7 @@ import {
   updateProduct,
   type FindAllProductsQueryParams,
 } from '@/lib/api/products'
+import { INVENTORY_QUERY_KEYS } from '@/lib/api/inventories'
 import type { ProductFormValues } from '@/lib/schemas'
 
 export function useProductsQuery(params?: FindAllProductsQueryParams) {
@@ -28,6 +29,7 @@ export function useCreateProductMutation() {
   return useMutation((input: ProductFormValues) => createProduct(input), {
     onSuccess: () => {
       void queryClient.invalidateQueries(PRODUCT_QUERY_KEYS.lists())
+      void queryClient.invalidateQueries(INVENTORY_QUERY_KEYS.lists())
     },
   })
 }
@@ -42,6 +44,7 @@ export function useUpdateProductMutation() {
       onSuccess: (product) => {
         void queryClient.invalidateQueries(PRODUCT_QUERY_KEYS.lists())
         void queryClient.invalidateQueries(PRODUCT_QUERY_KEYS.detail(product.productId))
+        void queryClient.invalidateQueries(INVENTORY_QUERY_KEYS.lists())
       },
     },
   )
@@ -53,6 +56,7 @@ export function useDeleteProductMutation() {
   return useMutation((productId: string) => deleteProduct(productId), {
     onSuccess: () => {
       void queryClient.invalidateQueries(PRODUCT_QUERY_KEYS.lists())
+      void queryClient.invalidateQueries(INVENTORY_QUERY_KEYS.lists())
     },
   })
 }

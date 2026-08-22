@@ -1,6 +1,7 @@
 import { ExternalLink } from 'lucide-react'
 import { formatDateTime, formatVnd } from '@/lib/format'
-import type { Category, Product } from '@/lib/types'
+import { getInventoryStockLabel, getInventoryStockStatus } from '@/lib/inventory'
+import type { Category, InventorySummary, Product } from '@/lib/types'
 import { Badge } from '@/components/ui/badge'
 import {
   Table,
@@ -16,9 +17,11 @@ import { ProductFormDialog } from '@/components/products/product-form-dialog'
 export function ProductsTable({
   products,
   categories,
+  inventoryByProductId,
 }: {
   products: Product[]
   categories: Category[]
+  inventoryByProductId?: Map<string, InventorySummary>
 }) {
   const categoryNames = new Map(categories.map((category) => [category.categoryId, category.name]))
 
@@ -41,6 +44,7 @@ export function ProductsTable({
             <TableHead className='w-[30%]'>Product</TableHead>
             <TableHead>Category</TableHead>
             <TableHead>Price</TableHead>
+            <TableHead>Inventory</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Updated</TableHead>
             <TableHead className='w-24 text-right'>Actions</TableHead>
@@ -49,6 +53,14 @@ export function ProductsTable({
         <TableBody>
           {products.map((product) => (
             <TableRow key={product.productId}>
+              {(() => {
+                const inventory = inventoryByProductId?.get(product.productId)
+                const stockStatus = inventory
+                  ? getInventoryStockStatus(inventory.availableQuantity)
+                  : null
+
+                return (
+                  <>
               <TableCell>
                 <div className='min-w-0 space-y-1'>
                   <div className='flex items-center gap-2'>
@@ -82,6 +94,33 @@ export function ProductsTable({
               </TableCell>
               <TableCell>{formatVnd(product.price)}</TableCell>
               <TableCell>
+                {inventory ? (
+                  <div className='space-y-1'>
+                    <p className='text-sm font-medium'>
+                      {inventory.availableQuantity} available
+                    </p>
+                    <p className='text-xs text-muted-foreground'>
+                      {inventory.reservedQuantity} reserved
+                    </p>
+                    {stockStatus ? (
+                      <Badge
+                        variant={
+                          stockStatus === 'OUT_OF_STOCK'
+                            ? 'destructive'
+                            : stockStatus === 'LOW_STOCK'
+                              ? 'secondary'
+                              : 'outline'
+                        }
+                      >
+                        {getInventoryStockLabel(stockStatus)}
+                      </Badge>
+                    ) : null}
+                  </div>
+                ) : (
+                  <span className='text-sm text-muted-foreground'>Unavailable</span>
+                )}
+              </TableCell>
+              <TableCell>
                 <Badge variant={product.status === 'ACTIVE' ? 'default' : 'secondary'}>
                   {product.status}
                 </Badge>
@@ -95,6 +134,9 @@ export function ProductsTable({
                   <DeleteProductDialog product={product} />
                 </div>
               </TableCell>
+                  </>
+                )
+              })()}
             </TableRow>
           ))}
         </TableBody>

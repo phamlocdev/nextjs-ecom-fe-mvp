@@ -8,6 +8,7 @@ import { ResourceError } from '@/components/resource-error'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useCatalogQueryParams } from '@/hooks/use-catalog-query-params'
 import { useCategoriesQuery } from '@/hooks/use-categories'
+import { useInventoriesQuery } from '@/hooks/use-inventories'
 import { useProductsQuery } from '@/hooks/use-products'
 import { toApiClientError } from '@/lib/api/errors'
 
@@ -17,9 +18,16 @@ export default function ProductsPage() {
   const categoriesResult = useCategoriesQuery({ limit: 200 })
   const productsPage = productsResult.data
   const products = productsPage?.items ?? []
+  const inventoryResult = useInventoriesQuery({
+    productIds: products.map((product) => product.productId),
+  })
   const categories = categoriesResult.data?.items ?? []
   const productsError = productsResult.error ? toApiClientError(productsResult.error) : null
   const categoriesError = categoriesResult.error ? toApiClientError(categoriesResult.error) : null
+  const inventoryError = inventoryResult.error ? toApiClientError(inventoryResult.error) : null
+  const inventoryByProductId = new Map(
+    (inventoryResult.data?.items ?? []).map((inventory) => [inventory.productId, inventory] as const),
+  )
 
   return (
     <div className='space-y-6'>
@@ -55,12 +63,23 @@ export default function ProductsPage() {
           details={categoriesError.details}
         />
       ) : null}
+      {inventoryError ? (
+        <ResourceError
+          title='Inventories endpoint error'
+          message={inventoryError.message}
+          details={inventoryError.details}
+        />
+      ) : null}
 
       {productsResult.isLoading ? (
         <ProductsSkeleton />
       ) : !productsError ? (
         <>
-          <ProductsTable products={products} categories={categories} />
+          <ProductsTable
+            products={products}
+            categories={categories}
+            inventoryByProductId={inventoryByProductId}
+          />
           {productsPage ? (
             <PaginationControls
               limit={productsPage.limit}

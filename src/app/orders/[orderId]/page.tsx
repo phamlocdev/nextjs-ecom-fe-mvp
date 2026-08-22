@@ -25,7 +25,12 @@ export default function OrderDetailPage() {
 
   const canPay = useMemo(() => {
     const order = orderResult.data
-    return Boolean(order && order.status === 'RESERVED' && isPaymentRetryable(order.paymentStatus))
+    const isExpired =
+      typeof order?.paymentExpiresAt === 'number' &&
+      order.paymentExpiresAt <= Math.floor(Date.now() / 1000)
+    return Boolean(
+      order && order.status === 'RESERVED' && isPaymentRetryable(order.paymentStatus) && !isExpired,
+    )
   }, [orderResult.data])
 
   if (isHydrating || !isAuthenticated) {
@@ -33,7 +38,13 @@ export default function OrderDetailPage() {
   }
 
   if (orderError) {
-    return <ResourceError title='Order error' message={orderError.message} details={orderError.details} />
+    return (
+      <ResourceError
+        title='Order error'
+        message={orderError.message}
+        details={orderError.details}
+      />
+    )
   }
 
   if (orderResult.isLoading || !orderResult.data) {
@@ -68,6 +79,12 @@ export default function OrderDetailPage() {
             <div className='flex items-center justify-between'>
               <span className='text-muted-foreground'>Reserved</span>
               <span>{formatDateTime(order.reservedAt)}</span>
+            </div>
+          ) : null}
+          {order.paymentExpiresAt ? (
+            <div className='flex items-center justify-between'>
+              <span className='text-muted-foreground'>Pay before</span>
+              <span>{formatDateTime(new Date(order.paymentExpiresAt * 1000).toISOString())}</span>
             </div>
           ) : null}
           {order.paymentRequestedAt ? (
