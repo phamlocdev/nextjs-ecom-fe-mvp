@@ -2,7 +2,17 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Boxes, LogOut, Package, PanelLeftClose, PanelLeftOpen, Store, Tags } from 'lucide-react'
+import {
+  Boxes,
+  CreditCard,
+  LogOut,
+  Package,
+  PanelLeftClose,
+  PanelLeftOpen,
+  ShoppingCart,
+  Store,
+  Tags,
+} from 'lucide-react'
 import { toast } from 'sonner'
 import { getClaimString, useAuthStore } from '@/store/auth-store'
 import { cn } from '@/lib/utils'
@@ -23,6 +33,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const username = getClaimString(idTokenClaims, 'cognito:username')
   const displayName = email ?? username
   const isAdmin = hasRole(idTokenClaims, 'admin')
+  const isCustomerSignedIn = isAuthenticated && !isAdmin
 
   async function handleSignOut() {
     try {
@@ -154,18 +165,38 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <span className='font-medium text-foreground'>{displayName}</span>
               ) : (
                 <span>Direct API Gateway client</span>
+            )}
+          </div>
+            <div className='flex items-center gap-2'>
+              {isCustomerSignedIn ? (
+                <>
+                  <Link
+                    href='/cart'
+                    className='inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors hover:bg-muted'
+                  >
+                    <ShoppingCart className='size-4' />
+                    Cart
+                  </Link>
+                  <Link
+                    href='/orders'
+                    className='inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors hover:bg-muted'
+                  >
+                    <CreditCard className='size-4' />
+                    Orders
+                  </Link>
+                </>
+              ) : null}
+              {isAuthenticated ? (
+                <Button type='button' variant='outline' size='sm' onClick={handleSignOut}>
+                  <LogOut />
+                  Sign out
+                </Button>
+              ) : (
+                <Link href='/auth/login' className='text-sm font-medium text-primary hover:underline'>
+                  Sign in
+                </Link>
               )}
             </div>
-            {isAuthenticated ? (
-              <Button type='button' variant='outline' size='sm' onClick={handleSignOut}>
-                <LogOut />
-                Sign out
-              </Button>
-            ) : (
-              <Link href='/auth/login' className='text-sm font-medium text-primary hover:underline'>
-                Sign in
-              </Link>
-            )}
           </div>
         </header>
         <main className='px-4 py-6 sm:px-6 lg:px-8'>{children}</main>
