@@ -29,7 +29,13 @@ export default function OrderPaymentPage() {
   }
 
   if (orderError) {
-    return <ResourceError title='Payment order error' message={orderError.message} details={orderError.details} />
+    return (
+      <ResourceError
+        title='Payment order error'
+        message={orderError.message}
+        details={orderError.details}
+      />
+    )
   }
 
   if (orderResult.isLoading || !orderResult.data) {
@@ -37,7 +43,11 @@ export default function OrderPaymentPage() {
   }
 
   const order = orderResult.data
-  const canTriggerPayment = order.status === 'RESERVED' && isPaymentRetryable(order.paymentStatus)
+  const isExpired =
+    typeof order.paymentExpiresAt === 'number' &&
+    order.paymentExpiresAt <= Math.floor(Date.now() / 1000)
+  const canTriggerPayment =
+    order.status === 'RESERVED' && isPaymentRetryable(order.paymentStatus) && !isExpired
 
   async function handleTriggerPayment() {
     try {
@@ -62,7 +72,9 @@ export default function OrderPaymentPage() {
 
       <Card>
         <CardHeader className='items-center text-center'>
-          <CardTitle className='text-2xl'>{order.totalAmount ? formatVnd(order.totalAmount) : 'Pending total'}</CardTitle>
+          <CardTitle className='text-2xl'>
+            {order.totalAmount ? formatVnd(order.totalAmount) : 'Pending total'}
+          </CardTitle>
           <div className='flex flex-wrap justify-center gap-2'>
             <OrderStatusBadge status={order.status} />
             <PaymentStatusBadge status={order.paymentStatus} />
@@ -73,6 +85,12 @@ export default function OrderPaymentPage() {
             <span className='text-muted-foreground'>Reserved at</span>
             <span>{order.reservedAt ? formatDateTime(order.reservedAt) : 'Not reserved yet'}</span>
           </div>
+          {order.paymentExpiresAt ? (
+            <div className='flex items-center justify-between'>
+              <span className='text-muted-foreground'>Pay before</span>
+              <span>{formatDateTime(new Date(order.paymentExpiresAt * 1000).toISOString())}</span>
+            </div>
+          ) : null}
           {order.paymentRequestedAt ? (
             <div className='flex items-center justify-between'>
               <span className='text-muted-foreground'>Payment requested</span>
@@ -90,10 +108,18 @@ export default function OrderPaymentPage() {
               {order.paymentFailureReason}
             </div>
           ) : null}
+          {isExpired && order.status === 'RESERVED' ? (
+            <div className='rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-destructive'>
+              Payment window expired. This reservation will be released automatically.
+            </div>
+          ) : null}
         </CardContent>
         <CardFooter className='flex-col gap-3'>
           {order.status === 'CONFIRMED' ? (
-            <Link href={`/orders/${encodeURIComponent(order.orderId)}`} className={buttonVariants({ className: 'w-full' })}>
+            <Link
+              href={`/orders/${encodeURIComponent(order.orderId)}`}
+              className={buttonVariants({ className: 'w-full' })}
+            >
               Back to order
             </Link>
           ) : (

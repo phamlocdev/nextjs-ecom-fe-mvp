@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import {
   Boxes,
   CreditCard,
+  Layers3,
   LogOut,
   Package,
   PanelLeftClose,
@@ -21,6 +22,7 @@ import { useState } from 'react'
 
 const navItems = [
   { href: '/admin/products', label: 'Products', icon: Package },
+  { href: '/admin/inventories', label: 'Inventories', icon: Layers3 },
   { href: '/admin/categories', label: 'Categories', icon: Tags },
 ]
 
@@ -32,8 +34,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const email = getClaimString(idTokenClaims, 'email')
   const username = getClaimString(idTokenClaims, 'cognito:username')
   const displayName = email ?? username
-  const isAdmin = hasRole(idTokenClaims, 'admin')
-  const isCustomerSignedIn = isAuthenticated && !isAdmin
+  const hasAdminAccess = hasRole(idTokenClaims, 'admin') || hasRole(idTokenClaims, 'manager')
+  const isCustomerSignedIn = isAuthenticated && !hasAdminAccess
 
   async function handleSignOut() {
     try {
@@ -47,7 +49,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className='min-h-screen bg-background'>
-      {isAdmin ? (
+      {hasAdminAccess ? (
         <aside
           className={cn(
             'fixed inset-y-0 left-0 hidden border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] lg:flex lg:flex-col',
@@ -119,14 +121,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </aside>
       ) : null}
 
-      <div className={cn(isAdmin && (isSidebarExpanded ? 'lg:pl-64' : 'lg:pl-20'))}>
+      <div className={cn(hasAdminAccess && (isSidebarExpanded ? 'lg:pl-64' : 'lg:pl-20'))}>
         <header className='sticky top-0 z-30 border-b bg-background/90 backdrop-blur'>
           <div className='flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8'>
             <Link href='/' className='flex items-center gap-2 font-semibold lg:hidden'>
               <Store className='size-5 text-primary' />
               Catalog
             </Link>
-            {isAdmin ? (
+            {hasAdminAccess ? (
               <nav className='flex gap-1 lg:hidden'>
                 <Link
                   href='/'
