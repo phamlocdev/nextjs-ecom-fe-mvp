@@ -7,23 +7,35 @@ import {
   CreditCard,
   Layers3,
   LogOut,
+  Menu,
   Package,
   PanelLeftClose,
   PanelLeftOpen,
   ShoppingCart,
   Store,
   Tags,
+  UserCog,
+  UserRound,
 } from 'lucide-react'
 import { toast } from 'sonner'
-import { getClaimString, useAuthStore } from '@/store/auth-store'
+import { useAuthStore } from '@/store/auth-store'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { useState } from 'react'
 
 const navItems = [
   { href: '/admin/products', label: 'Products', icon: Package },
   { href: '/admin/inventories', label: 'Inventories', icon: Layers3 },
   { href: '/admin/categories', label: 'Categories', icon: Tags },
+  { href: '/admin/users', label: 'Users', icon: UserCog },
 ]
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -31,9 +43,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
   const { idTokenClaims, isAuthenticated, signOut } = useAuthStore()
-  const email = getClaimString(idTokenClaims, 'email')
-  const username = getClaimString(idTokenClaims, 'cognito:username')
-  const displayName = email ?? username
   const hasAdminAccess = hasRole(idTokenClaims, 'admin') || hasRole(idTokenClaims, 'manager')
   const isCustomerSignedIn = isAuthenticated && !hasAdminAccess
 
@@ -124,54 +133,48 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <div className={cn(hasAdminAccess && (isSidebarExpanded ? 'lg:pl-64' : 'lg:pl-20'))}>
         <header className='sticky top-0 z-30 border-b bg-background/90 backdrop-blur'>
           <div className='flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8'>
-            <Link href='/' className='flex items-center gap-2 font-semibold lg:hidden'>
+            <Link href='/' className='flex items-center gap-2 font-semibold'>
               <Store className='size-5 text-primary' />
-              Catalog
+              <span className='hidden sm:inline'>Catalog</span>
             </Link>
             {hasAdminAccess ? (
-              <nav className='flex gap-1 lg:hidden'>
-                <Link
-                  href='/'
-                  aria-label='Catalog'
-                  title='Catalog'
-                  className={cn(
-                    'flex size-9 items-center justify-center rounded-md transition-colors',
-                    pathname === '/' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted',
-                  )}
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  render={<Button variant='outline' size='icon-sm' className='lg:hidden' />}
+                  aria-label='Open navigation'
                 >
-                  <Store className='size-4' />
-                </Link>
-                {navItems.map((item) => {
-                  const Icon = item.icon
-                  const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`)
+                  <Menu className='size-4' />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className='lg:hidden'>
+                  <DropdownMenuLabel>Navigation</DropdownMenuLabel>
+                  <DropdownMenuItem onClick={() => router.push('/')}>
+                    <Store className='size-4' />
+                    Catalog
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  {navItems.map((item) => {
+                    const Icon = item.icon
 
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      aria-label={item.label}
-                      title={item.label}
-                      className={cn(
-                        'flex size-9 items-center justify-center rounded-md transition-colors',
-                        isActive ? 'bg-primary text-primary-foreground' : 'hover:bg-muted',
-                      )}
-                    >
-                      <Icon className='size-4' />
-                    </Link>
-                  )
-                })}
-              </nav>
+                    return (
+                      <DropdownMenuItem key={item.href} onClick={() => router.push(item.href)}>
+                        <Icon className='size-4' />
+                        {item.label}
+                      </DropdownMenuItem>
+                    )
+                  })}
+                </DropdownMenuContent>
+              </DropdownMenu>
             ) : null}
-            <div className='hidden text-sm text-muted-foreground lg:block'>
-              {displayName ? (
-                <span className='font-medium text-foreground'>{displayName}</span>
-              ) : (
-                <span>Direct API Gateway client</span>
-            )}
-          </div>
             <div className='flex items-center gap-2'>
               {isCustomerSignedIn ? (
                 <>
+                  <Link
+                    href='/profile'
+                    className='inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors hover:bg-muted'
+                  >
+                    <UserRound className='size-4' />
+                    Profile
+                  </Link>
                   <Link
                     href='/cart'
                     className='inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors hover:bg-muted'
@@ -189,12 +192,27 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 </>
               ) : null}
               {isAuthenticated ? (
-                <Button type='button' variant='outline' size='sm' onClick={handleSignOut}>
-                  <LogOut />
-                  Sign out
-                </Button>
+                <>
+                  {hasAdminAccess ? (
+                    <Link
+                      href='/profile'
+                      aria-label='Profile'
+                      title='Profile'
+                      className='inline-flex size-8 items-center justify-center rounded-lg border transition-colors hover:bg-muted'
+                    >
+                      <UserRound className='size-4' />
+                    </Link>
+                  ) : null}
+                  <Button type='button' variant='outline' size='sm' onClick={handleSignOut}>
+                    <LogOut />
+                    Sign out
+                  </Button>
+                </>
               ) : (
-                <Link href='/auth/login' className='text-sm font-medium text-primary hover:underline'>
+                <Link
+                  href='/auth/login'
+                  className='text-sm font-medium text-primary hover:underline'
+                >
                   Sign in
                 </Link>
               )}

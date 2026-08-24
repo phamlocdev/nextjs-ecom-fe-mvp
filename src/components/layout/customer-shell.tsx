@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Boxes, LayoutDashboard, LogIn, LogOut, Package } from 'lucide-react'
+import { Boxes, LayoutDashboard, LogIn, LogOut, Package, UserRound } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const navItems = [{ href: '/customer/products', label: 'Products', icon: Package }]
@@ -46,7 +46,9 @@ export function CustomerShell({
                   href={item.href}
                   className={cn(
                     'inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors',
-                    isActive ? 'bg-foreground text-background' : 'text-muted-foreground hover:bg-muted',
+                    isActive
+                      ? 'bg-foreground text-background'
+                      : 'text-muted-foreground hover:bg-muted',
                   )}
                 >
                   <Icon className='size-4' />
@@ -74,6 +76,13 @@ export function CustomerShell({
                     {roleLabel}
                   </p>
                 </div>
+                <Link
+                  href='/profile'
+                  className='inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-colors hover:bg-muted'
+                >
+                  <UserRound className='size-4' />
+                  Profile
+                </Link>
                 <Link
                   href='/auth/logout'
                   className='inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-colors hover:bg-muted'

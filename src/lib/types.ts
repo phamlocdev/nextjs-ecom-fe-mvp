@@ -11,10 +11,19 @@ export type Product = {
   categoryId: string
   price: number
   currency: string
+  images?: ProductImage[]
   imageUrl?: string
   status: ProductStatus
   createdAt: string
   updatedAt: string
+}
+
+export type ProductImage = {
+  imageKey: string
+  alt?: string
+  sortOrder: number
+  isPrimary: boolean
+  readUrl?: string
 }
 
 export type InventoryRecord = {
@@ -124,7 +133,10 @@ export type PaginationParams = {
 }
 
 export type ProductFilterParams = Omit<PaginationParams, 'limit' | 'cursor'>
-export type InventoryPaginationParams = Pick<PaginationParams, 'limit' | 'cursor' | 'status' | 'q'> & {
+export type InventoryPaginationParams = Pick<
+  PaginationParams,
+  'limit' | 'cursor' | 'status' | 'q'
+> & {
   productIds?: string[]
 }
 
@@ -141,4 +153,38 @@ export type ApiErrorPayload = {
   statusCode?: number
   message?: string | string[]
   error?: string
+}
+
+export type ManagedUser = {
+  username: string
+  enabled: boolean
+  status?: string
+  name?: string
+  sub?: string
+  email?: string
+  emailVerified: boolean
+  groups: string[]
+  profile?: UserProfile
+  createdAt?: string
+  updatedAt?: string
+}
+
+export type UserProfile = {
+  sub: string
+  username: string
+  email?: string
+  name?: string
+  avatarKey?: string
+  avatarReadUrl?: string
+  createdAt: string
+  updatedAt: string
+}
+
+export type CustomerProfile = {
+  username: string
+  email?: string
+  name?: string
+  sub?: string
+  avatarKey?: string
+  avatarReadUrl?: string
 }

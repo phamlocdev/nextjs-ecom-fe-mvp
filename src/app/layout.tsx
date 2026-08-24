@@ -3,6 +3,7 @@ import { Toaster } from '@/components/ui/sonner'
 import { AppProviders } from '@/providers/app-providers'
 import type { Metadata } from 'next'
 import { Geist_Mono } from 'next/font/google'
+import 'yet-another-react-lightbox/styles.css'
 import './globals.css'
 
 const geistMono = Geist_Mono({

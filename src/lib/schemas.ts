@@ -1,10 +1,5 @@
 import { z } from 'zod'
 
-const optionalUrl = z
-  .union([z.string().trim().url('Image URL must be a valid URL').max(2048), z.literal('')])
-  .optional()
-  .transform((value) => (value === '' ? undefined : value))
-
 const optionalDescription = z
   .union([z.string().trim().min(1, 'Description cannot be empty').max(500), z.literal('')])
   .optional()
@@ -12,12 +7,24 @@ const optionalDescription = z
 
 export const productStatusSchema = z.enum(['ACTIVE', 'INACTIVE'])
 
+export const productImageSchema = z.object({
+  imageKey: z.string().trim().min(1).max(1024),
+  alt: z
+    .union([z.string().trim().max(160), z.literal('')])
+    .optional()
+    .transform((value) => (value === '' ? undefined : value)),
+  sortOrder: z.number().int().min(0),
+  isPrimary: z.boolean(),
+  readUrl: z.string().optional(),
+})
+
 export const productFormSchema = z.object({
   name: z.string().trim().min(2).max(120),
   description: z.string().trim().min(1, 'Description is required').max(2000),
   categoryId: z.string().trim().min(1, 'Category is required').max(64),
   price: z.coerce.number().int('Price must be an integer VND amount').min(1),
-  imageUrl: optionalUrl,
+  images: z.array(productImageSchema).default([]),
+  uploadSessionId: z.string().optional(),
   status: productStatusSchema.default('ACTIVE'),
 })
 

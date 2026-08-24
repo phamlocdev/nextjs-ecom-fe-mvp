@@ -24,13 +24,28 @@ export async function findProductById(productId: string): Promise<Product> {
   return response.data
 }
 
+function toProductWritePayload(input: ProductFormValues): ProductFormValues {
+  return {
+    ...input,
+    images: input.images.map((image) => ({
+      imageKey: image.imageKey,
+      alt: image.alt,
+      sortOrder: image.sortOrder,
+      isPrimary: image.isPrimary,
+    })),
+  }
+}
+
 export async function createProduct(input: ProductFormValues): Promise<Product> {
-  const response = await apiClient.post<Product>('/products', input)
+  const response = await apiClient.post<Product>('/products', toProductWritePayload(input))
   return response.data
 }
 
 export async function updateProduct(productId: string, input: ProductFormValues): Promise<Product> {
-  const response = await apiClient.patch<Product>(`/products/${productId}`, input)
+  const response = await apiClient.patch<Product>(
+    `/products/${productId}`,
+    toProductWritePayload(input),
+  )
   return response.data
 }
 

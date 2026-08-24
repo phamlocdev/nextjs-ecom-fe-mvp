@@ -1,10 +1,11 @@
 'use client'
 
+import Link from 'next/link'
 import { PaginationControls } from '@/components/pagination/pagination-controls'
 import { ProductFiltersDialog } from '@/components/products/product-filters-dialog'
-import { ProductFormDialog } from '@/components/products/product-form-dialog'
 import { ProductsTable } from '@/components/products/products-table'
 import { ResourceError } from '@/components/resource-error'
+import { buttonVariants } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useCatalogQueryParams } from '@/hooks/use-catalog-query-params'
 import { useCategoriesQuery } from '@/hooks/use-categories'
@@ -12,6 +13,8 @@ import { useInventoriesQuery } from '@/hooks/use-inventories'
 import { useProductsQuery } from '@/hooks/use-products'
 import { useRequireAuth } from '@/hooks/use-require-auth'
 import { toApiClientError } from '@/lib/api/errors'
+import { cn } from '@/lib/utils'
+import { Plus } from 'lucide-react'
 
 export default function ProductsPage() {
   const { isAuthenticated, isHydrating } = useRequireAuth()
@@ -59,7 +62,10 @@ export default function ProductsPage() {
             scannedCount={productsPage?.scannedCount}
             onApplyFilters={setFilters}
           />
-          <ProductFormDialog categories={categories} />
+          <Link href='/admin/products/new' className={cn(buttonVariants())}>
+            <Plus />
+            New product
+          </Link>
         </div>
       </div>
 

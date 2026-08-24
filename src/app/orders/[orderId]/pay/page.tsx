@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
+import { useState } from 'react'
 import { CreditCard } from 'lucide-react'
 import { toast } from 'sonner'
 import { ResourceError } from '@/components/resource-error'
@@ -17,6 +18,7 @@ import { formatDateTime, formatVnd } from '@/lib/format'
 
 export default function OrderPaymentPage() {
   const router = useRouter()
+  const [nowEpochSeconds] = useState(() => Math.floor(Date.now() / 1000))
   const { isAuthenticated, isHydrating } = useRequireAuth()
   const params = useParams<{ orderId: string }>()
   const orderId = params.orderId
@@ -44,8 +46,7 @@ export default function OrderPaymentPage() {
 
   const order = orderResult.data
   const isExpired =
-    typeof order.paymentExpiresAt === 'number' &&
-    order.paymentExpiresAt <= Math.floor(Date.now() / 1000)
+    typeof order.paymentExpiresAt === 'number' && order.paymentExpiresAt <= nowEpochSeconds
   const canTriggerPayment =
     order.status === 'RESERVED' && isPaymentRetryable(order.paymentStatus) && !isExpired
 

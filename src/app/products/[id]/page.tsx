@@ -16,6 +16,7 @@ import { toApiClientError } from '@/lib/api/errors'
 import { formatDateTime, formatVnd } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/store/auth-store'
+import { ProductImageGallery } from '@/components/products/product-image-gallery'
 
 export default function ProductDetailPage() {
   const router = useRouter()
@@ -93,21 +94,7 @@ export default function ProductDetailPage() {
 
       <div className='grid gap-8 lg:grid-cols-12'>
         <section className='lg:col-span-7'>
-          <div className='overflow-hidden rounded-md border bg-muted'>
-            <div className='aspect-[4/3]'>
-              {product.imageUrl ? (
-                <img
-                  src={product.imageUrl}
-                  alt={product.name}
-                  className='h-full w-full object-cover'
-                />
-              ) : (
-                <div className='flex h-full w-full items-center justify-center text-muted-foreground'>
-                  No image
-                </div>
-              )}
-            </div>
-          </div>
+          <ProductImageGallery product={product} />
         </section>
 
         <section className='space-y-6 lg:col-span-5'>
@@ -117,7 +104,7 @@ export default function ProductDetailPage() {
                 {product.status}
               </Badge>
               <span className='text-sm text-muted-foreground'>
-              {category?.name ?? product.categoryId}
+                {category?.name ?? product.categoryId}
               </span>
             </div>
             <h1 className='text-3xl font-semibold tracking-normal'>{resolvedProduct.name}</h1>

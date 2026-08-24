@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { ArrowRight, RefreshCcw } from 'lucide-react'
 import { ResourceError } from '@/components/resource-error'
@@ -14,10 +14,10 @@ import { useRequireAuth } from '@/hooks/use-require-auth'
 import { isPaymentRetryable } from '@/lib/api/orders'
 import { toApiClientError } from '@/lib/api/errors'
 import { formatDateTime, formatVnd } from '@/lib/format'
-import { cn } from '@/lib/utils'
 
 export default function OrderDetailPage() {
   const { isAuthenticated, isHydrating } = useRequireAuth()
+  const [nowEpochSeconds] = useState(() => Math.floor(Date.now() / 1000))
   const params = useParams<{ orderId: string }>()
   const orderId = params.orderId
   const orderResult = useOrderQuery(orderId, { pollPending: true })
@@ -26,12 +26,11 @@ export default function OrderDetailPage() {
   const canPay = useMemo(() => {
     const order = orderResult.data
     const isExpired =
-      typeof order?.paymentExpiresAt === 'number' &&
-      order.paymentExpiresAt <= Math.floor(Date.now() / 1000)
+      typeof order?.paymentExpiresAt === 'number' && order.paymentExpiresAt <= nowEpochSeconds
     return Boolean(
       order && order.status === 'RESERVED' && isPaymentRetryable(order.paymentStatus) && !isExpired,
     )
-  }, [orderResult.data])
+  }, [nowEpochSeconds, orderResult.data])
 
   if (isHydrating || !isAuthenticated) {
     return <OrderDetailSkeleton />
