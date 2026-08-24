@@ -36,6 +36,10 @@ export const categoryCreateSchema = z.object({
 
 export const categoryUpdateSchema = categoryCreateSchema.omit({ categoryId: true })
 
+export const inventoryAdjustmentSchema = z.object({
+  availableQuantity: z.coerce.number().int('Quantity must be an integer').min(0),
+})
+
 const usernameSchema = z
   .string()
   .trim()
@@ -93,6 +97,8 @@ export type ProductFormValues = z.output<typeof productFormSchema>
 export type CategoryCreateInput = z.input<typeof categoryCreateSchema>
 export type CategoryCreateValues = z.output<typeof categoryCreateSchema>
 export type CategoryUpdateValues = z.output<typeof categoryUpdateSchema>
+export type InventoryAdjustmentInput = z.input<typeof inventoryAdjustmentSchema>
+export type InventoryAdjustmentValues = z.output<typeof inventoryAdjustmentSchema>
 export type SignInValues = z.output<typeof signInSchema>
 export type SignUpInput = z.input<typeof signUpSchema>
 export type SignUpValues = z.output<typeof signUpSchema>

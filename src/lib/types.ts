@@ -2,6 +2,7 @@ export type ProductStatus = 'ACTIVE' | 'INACTIVE'
 export type CartStatus = 'ACTIVE' | 'EXPIRED'
 export type OrderStatus = 'PENDING' | 'RESERVED' | 'CONFIRMED' | 'CANCELLED' | 'FAILED' | 'EXPIRED'
 export type PaymentStatus = 'NOT_STARTED' | 'PROCESSING' | 'PAID' | 'FAILED'
+export type InventoryStockStatus = 'IN_STOCK' | 'LOW_STOCK' | 'OUT_OF_STOCK'
 
 export type Product = {
   productId: string
@@ -14,6 +15,20 @@ export type Product = {
   status: ProductStatus
   createdAt: string
   updatedAt: string
+}
+
+export type InventoryRecord = {
+  productId: string
+  availableQuantity: number
+  reservedQuantity: number
+  updatedAt: string
+}
+
+export type InventorySummary = InventoryRecord & {
+  productName: string
+  categoryId: string
+  imageUrl?: string
+  productStatus: ProductStatus
 }
 
 export type Category = {
@@ -57,6 +72,7 @@ export type Order = {
   createdAt: string
   updatedAt: string
   reservedAt?: string
+  paymentExpiresAt?: number
   paymentRequestedAt?: string
   paidAt?: string
   paymentTransactionId?: string
@@ -108,6 +124,9 @@ export type PaginationParams = {
 }
 
 export type ProductFilterParams = Omit<PaginationParams, 'limit' | 'cursor'>
+export type InventoryPaginationParams = Pick<PaginationParams, 'limit' | 'cursor' | 'status' | 'q'> & {
+  productIds?: string[]
+}
 
 export type PaginatedResponse<T> = {
   items: T[]

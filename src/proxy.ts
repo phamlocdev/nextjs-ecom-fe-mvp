@@ -30,7 +30,7 @@ export function proxy(request: NextRequest) {
   //   return NextResponse.redirect(loginUrl)
   // }
 
-  if (isAdminRoute && !hasRole(authPayloads, 'admin')) {
+  if (isAdminRoute && !hasRole(authPayloads, ['admin', 'manager'])) {
     return NextResponse.redirect(new URL('/', request.url))
   }
 
@@ -87,15 +87,15 @@ function decodeJwtPayload(token: string): JwtPayload | null {
   }
 }
 
-function hasRole(payloads: JwtPayload[], role: string): boolean {
+function hasRole(payloads: JwtPayload[], roles: string[]): boolean {
   return payloads.some((payload) => {
     const groups = payload['cognito:groups']
     const directRole = payload.role ?? payload['custom:role']
 
-    if (Array.isArray(groups) && groups.some((value) => value.toLowerCase() === role)) {
+    if (Array.isArray(groups) && groups.some((value) => roles.includes(value.toLowerCase()))) {
       return true
     }
 
-    return typeof directRole === 'string' && directRole.toLowerCase() === role
+    return typeof directRole === 'string' && roles.includes(directRole.toLowerCase())
   })
 }

@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import type { ComponentType } from 'react'
-import { Activity, AlertCircle, ArrowRight, Package, Tags } from 'lucide-react'
+import { Activity, AlertCircle, ArrowRight, Layers3, Package, Tags } from 'lucide-react'
 import { formatVnd } from '@/lib/format'
 import type { Category, Product } from '@/lib/types'
 import { ResourceError } from '@/components/resource-error'
@@ -43,6 +43,10 @@ export default function AdminDashboardPage() {
             Categories
             <ArrowRight />
           </Link>
+          <Link href='/admin/inventories' className={cn(buttonVariants({ variant: 'outline' }))}>
+            Inventories
+            <ArrowRight />
+          </Link>
           <Link href='/admin/products' className={cn(buttonVariants())}>
             Products
             <ArrowRight />
@@ -81,7 +85,7 @@ export default function AdminDashboardPage() {
         <MetricCard
           title='Catalog Value'
           value={formatVnd(inventoryValue)}
-          icon={Activity}
+          icon={Layers3}
           detail='Sum of product prices'
         />
         <MetricCard
