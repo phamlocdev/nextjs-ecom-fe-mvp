@@ -47,5 +47,5 @@ export async function triggerOrderPayment(orderId: string): Promise<TriggerPayme
 }
 
 export function isPaymentRetryable(status: PaymentStatus): boolean {
-  return status === 'NOT_STARTED' || status === 'FAILED'
+  return status === 'NOT_STARTED' || status === 'FAILED' || status === 'PROCESSING'
 }

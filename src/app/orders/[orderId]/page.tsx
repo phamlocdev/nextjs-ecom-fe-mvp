@@ -1,29 +1,30 @@
 'use client'
 
-import Link from 'next/link'
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { useParams } from 'next/navigation'
-import { ArrowRight, RefreshCcw } from 'lucide-react'
+import { ArrowRight, CreditCard, RefreshCcw } from 'lucide-react'
+import { toast } from 'sonner'
 import { ResourceError } from '@/components/resource-error'
 import { OrderStatusBadge, PaymentStatusBadge } from '@/components/customer/order-status-badges'
-import { Button, buttonVariants } from '@/components/ui/button'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useOrderQuery } from '@/hooks/use-orders'
+import { useOrderQuery, useTriggerPaymentMutation } from '@/hooks/use-orders'
 import { useRequireAuth } from '@/hooks/use-require-auth'
 import { isPaymentRetryable } from '@/lib/api/orders'
 import { toApiClientError } from '@/lib/api/errors'
 import { formatDateTime, formatVnd } from '@/lib/format'
-import { cn } from '@/lib/utils'
 
 export default function OrderDetailPage() {
   const { isAuthenticated, isHydrating } = useRequireAuth()
   const params = useParams<{ orderId: string }>()
   const orderId = params.orderId
-  const orderResult = useOrderQuery(orderId, { pollPending: true })
+  const orderResult = useOrderQuery(orderId, { pollPending: true, pollPayment: true })
+  const triggerPaymentMutation = useTriggerPaymentMutation()
+  const hasAutoTriggeredRef = useRef(false)
   const orderError = orderResult.error ? toApiClientError(orderResult.error) : null
 
-  const canPay = useMemo(() => {
+  const canManuallyPay = useMemo(() => {
     const order = orderResult.data
     const isExpired =
       typeof order?.paymentExpiresAt === 'number' &&
@@ -32,6 +33,57 @@ export default function OrderDetailPage() {
       order && order.status === 'RESERVED' && isPaymentRetryable(order.paymentStatus) && !isExpired,
     )
   }, [orderResult.data])
+
+  const canAutoRedirect = useMemo(() => {
+    const order = orderResult.data
+    const isExpired =
+      typeof order?.paymentExpiresAt === 'number' &&
+      order.paymentExpiresAt <= Math.floor(Date.now() / 1000)
+
+    return Boolean(
+      order &&
+        order.status === 'RESERVED' &&
+        order.paymentStatus === 'NOT_STARTED' &&
+        !isExpired,
+    )
+  }, [orderResult.data])
+
+  useEffect(() => {
+    if (!orderId) {
+      return
+    }
+
+    const storageKey = getAutoRedirectStorageKey(orderId)
+    if (typeof window !== 'undefined' && window.sessionStorage.getItem(storageKey) === '1') {
+      hasAutoTriggeredRef.current = true
+    }
+  }, [orderId])
+
+  useEffect(() => {
+    if (!canAutoRedirect || triggerPaymentMutation.isLoading || hasAutoTriggeredRef.current) {
+      return
+    }
+
+    hasAutoTriggeredRef.current = true
+    if (typeof window !== 'undefined') {
+      window.sessionStorage.setItem(getAutoRedirectStorageKey(orderId), '1')
+    }
+    void handleTriggerPayment(true)
+  }, [canAutoRedirect, orderId, triggerPaymentMutation.isLoading])
+
+  async function handleTriggerPayment(isAutomatic = false) {
+    try {
+      const response = await triggerPaymentMutation.mutateAsync(orderId)
+      toast.success(isAutomatic ? 'Redirecting to VNPay...' : 'Opening VNPay checkout...')
+      window.location.assign(response.paymentUrl)
+    } catch (error) {
+      hasAutoTriggeredRef.current = false
+      if (typeof window !== 'undefined') {
+        window.sessionStorage.removeItem(getAutoRedirectStorageKey(orderId))
+      }
+      toast.error(toApiClientError(error).message)
+    }
+  }
 
   if (isHydrating || !isAuthenticated) {
     return <OrderDetailSkeleton />
@@ -110,6 +162,12 @@ export default function OrderDetailPage() {
               {order.paymentFailureReason ?? order.failureReason}
             </div>
           ) : null}
+          {order.paymentStatus === 'PROCESSING' ? (
+            <div className='rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-sm text-amber-700'>
+              Payment is being confirmed. This page refreshes automatically while VNPay finalizes
+              the transaction.
+            </div>
+          ) : null}
         </CardContent>
         <CardFooter className='justify-end gap-3'>
           {order.status === 'PENDING' ? (
@@ -118,14 +176,20 @@ export default function OrderDetailPage() {
               Waiting for reservation...
             </Button>
           ) : null}
-          {canPay ? (
-            <Link
-              href={`/orders/${encodeURIComponent(order.orderId)}/pay`}
-              className={buttonVariants()}
+          {canManuallyPay ? (
+            <Button
+              type='button'
+              disabled={triggerPaymentMutation.isLoading}
+              onClick={() => void handleTriggerPayment()}
             >
-              Continue to payment
+              <CreditCard />
+              {triggerPaymentMutation.isLoading
+                ? 'Redirecting to VNPay...'
+                : order.paymentStatus === 'FAILED'
+                  ? 'Retry payment'
+                  : 'Continue to payment'}
               <ArrowRight />
-            </Link>
+            </Button>
           ) : null}
         </CardFooter>
       </Card>
@@ -150,6 +214,10 @@ export default function OrderDetailPage() {
       </section>
     </div>
   )
+}
+
+function getAutoRedirectStorageKey(orderId: string): string {
+  return `order-payment-auto-redirected:${orderId}`
 }
 
 function OrderDetailSkeleton() {
