@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 
-// const protectedRoutes = ['/', '/products', '/admin']
+const protectedRoutes = ['/customer/profile']
 const adminRoutes = ['/admin']
 const guestRoutes = [
   '/auth/login',
@@ -12,9 +12,9 @@ const guestRoutes = [
 
 export function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname
-  // const isProtectedRoute = protectedRoutes.some(
-  //   (route) => pathname === route || (route !== '/' && pathname.startsWith(`${route}/`)),
-  // )
+  const isProtectedRoute = protectedRoutes.some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`),
+  )
   const isAdminRoute = adminRoutes.some(
     (route) => pathname === route || pathname.startsWith(`${route}/`),
   )
@@ -24,11 +24,11 @@ export function proxy(request: NextRequest) {
   const authPayloads = getValidCognitoTokenPayloads(request)
   const isAuthenticated = authPayloads.length > 0
 
-  // if (isProtectedRoute && !isAuthenticated) {
-  //   const loginUrl = new URL('/auth/login', request.url)
-  //   loginUrl.searchParams.set('next', `${pathname}${request.nextUrl.search}`)
-  //   return NextResponse.redirect(loginUrl)
-  // }
+  if (isProtectedRoute && !isAuthenticated) {
+    const loginUrl = new URL('/auth/login', request.url)
+    loginUrl.searchParams.set('next', `${pathname}${request.nextUrl.search}`)
+    return NextResponse.redirect(loginUrl)
+  }
 
   if (isAdminRoute && !hasRole(authPayloads, ['admin', 'manager'])) {
     return NextResponse.redirect(new URL('/', request.url))

@@ -13,6 +13,7 @@ import {
   ShoppingCart,
   Store,
   Tags,
+  UserCircle,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { getClaimString, useAuthStore } from '@/store/auth-store'
@@ -24,6 +25,7 @@ const navItems = [
   { href: '/admin/products', label: 'Products', icon: Package },
   { href: '/admin/inventories', label: 'Inventories', icon: Layers3 },
   { href: '/admin/categories', label: 'Categories', icon: Tags },
+  { href: '/admin/profile', label: 'Profile', icon: UserCircle },
 ]
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -167,11 +169,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <span className='font-medium text-foreground'>{displayName}</span>
               ) : (
                 <span>Direct API Gateway client</span>
-            )}
-          </div>
+              )}
+            </div>
             <div className='flex items-center gap-2'>
               {isCustomerSignedIn ? (
                 <>
+                  <Link
+                    href='/customer/profile'
+                    className='inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors hover:bg-muted'
+                  >
+                    <UserCircle className='size-4' />
+                    Profile
+                  </Link>
                   <Link
                     href='/cart'
                     className='inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors hover:bg-muted'
@@ -194,7 +203,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   Sign out
                 </Button>
               ) : (
-                <Link href='/auth/login' className='text-sm font-medium text-primary hover:underline'>
+                <Link
+                  href='/auth/login'
+                  className='text-sm font-medium text-primary hover:underline'
+                >
                   Sign in
                 </Link>
               )}

@@ -12,13 +12,31 @@ const optionalDescription = z
 
 export const productStatusSchema = z.enum(['ACTIVE', 'INACTIVE'])
 
+export const productImageSchema = z.object({
+  key: z.string().trim().min(1).max(1024),
+  sortOrder: z.coerce.number().int().min(0),
+  isPrimary: z.boolean(),
+  altText: z
+    .union([z.string().trim().max(160), z.literal('')])
+    .optional()
+    .transform((value) => (value === '' ? undefined : value)),
+})
+
 export const productFormSchema = z.object({
   name: z.string().trim().min(2).max(120),
   description: z.string().trim().min(1, 'Description is required').max(2000),
   categoryId: z.string().trim().min(1, 'Category is required').max(64),
   price: z.coerce.number().int('Price must be an integer VND amount').min(1),
   imageUrl: optionalUrl,
+  images: z.array(productImageSchema).optional(),
   status: productStatusSchema.default('ACTIVE'),
+})
+
+export const userProfileFormSchema = z.object({
+  name: z
+    .union([z.string().trim().max(120), z.literal('')])
+    .optional()
+    .transform((value) => (value === '' ? undefined : value)),
 })
 
 export const categoryCreateSchema = z.object({
@@ -94,6 +112,9 @@ export const confirmForgotPasswordSchema = z
 
 export type ProductFormInput = z.input<typeof productFormSchema>
 export type ProductFormValues = z.output<typeof productFormSchema>
+export type ProductImageValues = z.output<typeof productImageSchema>
+export type UserProfileFormInput = z.input<typeof userProfileFormSchema>
+export type UserProfileFormValues = z.output<typeof userProfileFormSchema>
 export type CategoryCreateInput = z.input<typeof categoryCreateSchema>
 export type CategoryCreateValues = z.output<typeof categoryCreateSchema>
 export type CategoryUpdateValues = z.output<typeof categoryUpdateSchema>
