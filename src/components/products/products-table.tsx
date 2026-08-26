@@ -1,8 +1,8 @@
-import { ExternalLink } from 'lucide-react'
-import { formatDateTime, formatVnd } from '@/lib/format'
-import { getInventoryStockLabel, getInventoryStockStatus } from '@/lib/inventory'
-import type { Category, InventorySummary, Product } from '@/lib/types'
+import Link from 'next/link'
+import { ExternalLink, Pencil } from 'lucide-react'
+import { DeleteProductDialog } from '@/components/products/delete-product-dialog'
 import { Badge } from '@/components/ui/badge'
+import { buttonVariants } from '@/components/ui/button'
 import {
   Table,
   TableBody,
@@ -11,8 +11,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { DeleteProductDialog } from '@/components/products/delete-product-dialog'
-import { ProductFormDialog } from '@/components/products/product-form-dialog'
+import { formatDateTime, formatVnd } from '@/lib/format'
+import { getInventoryStockLabel, getInventoryStockStatus } from '@/lib/inventory'
+import { getProductImageSrc } from '@/lib/product-images'
+import type { Category, InventorySummary, Product } from '@/lib/types'
 
 export function ProductsTable({
   products,
@@ -51,94 +53,93 @@ export function ProductsTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {products.map((product) => (
-            <TableRow key={product.productId}>
-              {(() => {
-                const inventory = inventoryByProductId?.get(product.productId)
-                const stockStatus = inventory
-                  ? getInventoryStockStatus(inventory.availableQuantity)
-                  : null
+          {products.map((product) => {
+            const inventory = inventoryByProductId?.get(product.productId)
+            const stockStatus = inventory
+              ? getInventoryStockStatus(inventory.availableQuantity)
+              : null
+            const imageSrc = getProductImageSrc(product)
 
-                return (
-                  <>
-              <TableCell>
-                <div className='min-w-0 space-y-1'>
-                  <div className='flex items-center gap-2'>
-                    <p className='truncate font-medium'>{product.name}</p>
-                    {product.imageUrl ? (
-                      <a
-                        href={product.imageUrl}
-                        target='_blank'
-                        rel='noreferrer'
-                        title='Open image URL'
-                      >
-                        <ExternalLink className='size-3.5 text-muted-foreground' />
-                      </a>
-                    ) : null}
+            return (
+              <TableRow key={product.productId}>
+                <TableCell>
+                  <div className='min-w-0 space-y-1'>
+                    <div className='flex items-center gap-2'>
+                      <p className='truncate font-medium'>{product.name}</p>
+                      {imageSrc ? (
+                        <a href={imageSrc} target='_blank' rel='noreferrer' title='Open image URL'>
+                          <ExternalLink className='size-3.5 text-muted-foreground' />
+                        </a>
+                      ) : null}
+                    </div>
+                    <p className='line-clamp-2 text-xs text-muted-foreground'>
+                      {product.description}
+                    </p>
+                    <p className='font-mono text-[11px] text-muted-foreground'>
+                      {product.productId}
+                    </p>
                   </div>
-                  <p className='line-clamp-2 text-xs text-muted-foreground'>
-                    {product.description}
-                  </p>
-                  <p className='font-mono text-[11px] text-muted-foreground'>{product.productId}</p>
-                </div>
-              </TableCell>
-              <TableCell>
-                <div className='space-y-1'>
-                  <p className='text-sm'>
-                    {categoryNames.get(product.categoryId) ?? product.categoryId}
-                  </p>
-                  <p className='font-mono text-[11px] text-muted-foreground'>
-                    {product.categoryId}
-                  </p>
-                </div>
-              </TableCell>
-              <TableCell>{formatVnd(product.price)}</TableCell>
-              <TableCell>
-                {inventory ? (
+                </TableCell>
+                <TableCell>
                   <div className='space-y-1'>
-                    <p className='text-sm font-medium'>
-                      {inventory.availableQuantity} available
+                    <p className='text-sm'>
+                      {categoryNames.get(product.categoryId) ?? product.categoryId}
                     </p>
-                    <p className='text-xs text-muted-foreground'>
-                      {inventory.reservedQuantity} reserved
+                    <p className='font-mono text-[11px] text-muted-foreground'>
+                      {product.categoryId}
                     </p>
-                    {stockStatus ? (
-                      <Badge
-                        variant={
-                          stockStatus === 'OUT_OF_STOCK'
-                            ? 'destructive'
-                            : stockStatus === 'LOW_STOCK'
-                              ? 'secondary'
-                              : 'outline'
-                        }
-                      >
-                        {getInventoryStockLabel(stockStatus)}
-                      </Badge>
-                    ) : null}
                   </div>
-                ) : (
-                  <span className='text-sm text-muted-foreground'>Unavailable</span>
-                )}
-              </TableCell>
-              <TableCell>
-                <Badge variant={product.status === 'ACTIVE' ? 'default' : 'secondary'}>
-                  {product.status}
-                </Badge>
-              </TableCell>
-              <TableCell className='text-sm text-muted-foreground'>
-                {formatDateTime(product.updatedAt)}
-              </TableCell>
-              <TableCell>
-                <div className='flex justify-end gap-1'>
-                  <ProductFormDialog product={product} categories={categories} />
-                  <DeleteProductDialog product={product} />
-                </div>
-              </TableCell>
-                  </>
-                )
-              })()}
-            </TableRow>
-          ))}
+                </TableCell>
+                <TableCell>{formatVnd(product.price)}</TableCell>
+                <TableCell>
+                  {inventory ? (
+                    <div className='space-y-1'>
+                      <p className='text-sm font-medium'>{inventory.availableQuantity} available</p>
+                      <p className='text-xs text-muted-foreground'>
+                        {inventory.reservedQuantity} reserved
+                      </p>
+                      {stockStatus ? (
+                        <Badge
+                          variant={
+                            stockStatus === 'OUT_OF_STOCK'
+                              ? 'destructive'
+                              : stockStatus === 'LOW_STOCK'
+                                ? 'secondary'
+                                : 'outline'
+                          }
+                        >
+                          {getInventoryStockLabel(stockStatus)}
+                        </Badge>
+                      ) : null}
+                    </div>
+                  ) : (
+                    <span className='text-sm text-muted-foreground'>Unavailable</span>
+                  )}
+                </TableCell>
+                <TableCell>
+                  <Badge variant={product.status === 'ACTIVE' ? 'default' : 'secondary'}>
+                    {product.status}
+                  </Badge>
+                </TableCell>
+                <TableCell className='text-sm text-muted-foreground'>
+                  {formatDateTime(product.updatedAt)}
+                </TableCell>
+                <TableCell>
+                  <div className='flex justify-end gap-1'>
+                    <Link
+                      href={`/admin/products/${product.productId}/edit`}
+                      className={buttonVariants({ variant: 'ghost', size: 'icon-sm' })}
+                      title='Edit product'
+                      aria-label='Edit product'
+                    >
+                      <Pencil />
+                    </Link>
+                    <DeleteProductDialog product={product} />
+                  </div>
+                </TableCell>
+              </TableRow>
+            )
+          })}
         </TableBody>
       </Table>
     </div>

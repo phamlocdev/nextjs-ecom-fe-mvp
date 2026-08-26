@@ -3,6 +3,11 @@
 import Link from 'next/link'
 import { LayoutGrid, List, ShoppingCart } from 'lucide-react'
 import { formatVnd } from '@/lib/format'
+import {
+  getProductImageAlt,
+  getProductImageSrc,
+  getPrimaryProductImage,
+} from '@/lib/product-images'
 import type { Category, Product } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
@@ -111,6 +116,9 @@ function ProductCard({
   categoryName: string
   viewMode: ProductViewMode
 }) {
+  const primaryImage = getPrimaryProductImage(product)
+  const imageSrc = getProductImageSrc(product)
+
   return (
     <article
       className={cn(
@@ -125,10 +133,10 @@ function ProductCard({
           viewMode === 'row' ? 'aspect-[4/3] rounded-md' : 'aspect-[4/3]',
         )}
       >
-        {product.imageUrl ? (
+        {imageSrc ? (
           <img
-            src={product.imageUrl}
-            alt={product.name}
+            src={imageSrc}
+            alt={getProductImageAlt(product, primaryImage)}
             className='h-full w-full object-cover transition-transform hover:scale-105'
           />
         ) : (

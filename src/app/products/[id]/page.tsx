@@ -14,6 +14,11 @@ import { useCategoriesQuery } from '@/hooks/use-categories'
 import { useProductQuery } from '@/hooks/use-products'
 import { toApiClientError } from '@/lib/api/errors'
 import { formatDateTime, formatVnd } from '@/lib/format'
+import {
+  getProductImageAlt,
+  getProductImageSrc,
+  getPrimaryProductImage,
+} from '@/lib/product-images'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/store/auth-store'
 
@@ -59,6 +64,8 @@ export default function ProductDetailPage() {
   }
 
   const resolvedProduct = product
+  const primaryImage = getPrimaryProductImage(product)
+  const imageSrc = getProductImageSrc(product)
 
   async function handleAddToCart(redirectToCheckout = false) {
     if (!isAuthenticated) {
@@ -95,10 +102,10 @@ export default function ProductDetailPage() {
         <section className='lg:col-span-7'>
           <div className='overflow-hidden rounded-md border bg-muted'>
             <div className='aspect-[4/3]'>
-              {product.imageUrl ? (
+              {imageSrc ? (
                 <img
-                  src={product.imageUrl}
-                  alt={product.name}
+                  src={imageSrc}
+                  alt={getProductImageAlt(product, primaryImage)}
                   className='h-full w-full object-cover'
                 />
               ) : (
@@ -108,6 +115,24 @@ export default function ProductDetailPage() {
               )}
             </div>
           </div>
+          {product.images && product.images.length > 1 ? (
+            <div className='mt-3 grid grid-cols-4 gap-2'>
+              {product.images.map((image) => (
+                <div
+                  key={image.key}
+                  className='aspect-square overflow-hidden rounded-md border bg-muted'
+                >
+                  {image.readUrl ? (
+                    <img
+                      src={image.readUrl}
+                      alt={getProductImageAlt(product, image)}
+                      className='h-full w-full object-cover'
+                    />
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          ) : null}
         </section>
 
         <section className='space-y-6 lg:col-span-5'>
@@ -117,7 +142,7 @@ export default function ProductDetailPage() {
                 {product.status}
               </Badge>
               <span className='text-sm text-muted-foreground'>
-              {category?.name ?? product.categoryId}
+                {category?.name ?? product.categoryId}
               </span>
             </div>
             <h1 className='text-3xl font-semibold tracking-normal'>{resolvedProduct.name}</h1>

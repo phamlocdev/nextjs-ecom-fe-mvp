@@ -12,7 +12,29 @@ export type Product = {
   price: number
   currency: string
   imageUrl?: string
+  images?: ProductImage[]
   status: ProductStatus
+  createdAt: string
+  updatedAt: string
+}
+
+export type ProductImage = {
+  key: string
+  sortOrder: number
+  isPrimary: boolean
+  altText?: string
+  readUrl?: string
+  readUrlExpiresInSeconds?: number
+}
+
+export type UserProfile = {
+  userId: string
+  username: string
+  email?: string
+  name?: string
+  avatarKey?: string
+  avatarReadUrl?: string
+  avatarReadUrlExpiresInSeconds?: number
   createdAt: string
   updatedAt: string
 }
@@ -126,7 +148,10 @@ export type PaginationParams = {
 }
 
 export type ProductFilterParams = Omit<PaginationParams, 'limit' | 'cursor'>
-export type InventoryPaginationParams = Pick<PaginationParams, 'limit' | 'cursor' | 'status' | 'q'> & {
+export type InventoryPaginationParams = Pick<
+  PaginationParams,
+  'limit' | 'cursor' | 'status' | 'q'
+> & {
   productIds?: string[]
 }
 
