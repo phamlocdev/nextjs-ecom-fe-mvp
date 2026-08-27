@@ -19,8 +19,10 @@ export const env = {
     'NEXT_PUBLIC_COGNITO_DOMAIN_URL',
     process.env.NEXT_PUBLIC_COGNITO_DOMAIN_URL,
   ),
-  cognitoUserPoolEndpoint:
-    process.env.NEXT_PUBLIC_COGNITO_USER_POOL_ENDPOINT || 'http://localhost.localstack.cloud:4566',
+  cognitoUserPoolEndpoint: readRequiredEnv(
+    'NEXT_PUBLIC_COGNITO_USER_POOL_ENDPOINT',
+    process.env.NEXT_PUBLIC_COGNITO_USER_POOL_ENDPOINT,
+  ),
 }
 
 function readRequiredEnv(name: string, value: string | undefined): string {

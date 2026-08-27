@@ -275,7 +275,9 @@ async function redirectToLocalStackHostedUi(provider?: HostedUiProvider): Promis
   const state = generateRandomString(32)
   const codeVerifier = generateRandomString(64)
   const codeChallenge = await createCodeChallenge(codeVerifier)
-  const authorizeUrl = new URL(`${trimTrailingSlash(env.cognitoUserPoolEndpoint)}/_aws/cognito-idp/oauth2/authorize`)
+  const authorizeUrl = new URL(
+    `${trimTrailingSlash(env.cognitoUserPoolEndpoint)}/_aws/cognito-idp/oauth2/authorize`,
+  )
 
   authorizeUrl.searchParams.set('client_id', env.cognitoClientId)
   authorizeUrl.searchParams.set('redirect_uri', redirectUri)
@@ -351,7 +353,10 @@ async function storeHostedUiTokens(tokens: OAuthTokenResponse): Promise<void> {
 function decodeJwt(token: string): JWT {
   const [, payload = ''] = token.split('.')
   const normalized = payload.replace(/-/g, '+').replace(/_/g, '/')
-  const padded = normalized.padEnd(normalized.length + ((4 - (normalized.length % 4 || 4)) % 4), '=')
+  const padded = normalized.padEnd(
+    normalized.length + ((4 - (normalized.length % 4 || 4)) % 4),
+    '=',
+  )
   const json = JSON.parse(atob(padded)) as Record<string, unknown>
 
   return {
