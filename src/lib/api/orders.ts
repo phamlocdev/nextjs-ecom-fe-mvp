@@ -24,6 +24,11 @@ export const ORDER_QUERY_KEYS = {
   detail: (orderId: string) => [...ORDER_QUERY_KEYS.details(), orderId] as const,
 }
 
+export type PlaceOrderInput = {
+  cartId: string
+  additionalReceivingEmails?: string[]
+}
+
 export async function findAllOrders(
   params?: FindAllOrdersQueryParams,
 ): Promise<PaginatedResponse<Order>> {
@@ -36,8 +41,8 @@ export async function findOrderById(orderId: string): Promise<OrderDetails> {
   return response.data
 }
 
-export async function placeOrder(cartId: string): Promise<PlaceOrderResponse> {
-  const response = await apiClient.post<PlaceOrderResponse>('/orders', { cartId })
+export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResponse> {
+  const response = await apiClient.post<PlaceOrderResponse>('/orders', input)
   return response.data
 }
 

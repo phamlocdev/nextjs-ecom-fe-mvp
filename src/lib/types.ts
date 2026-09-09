@@ -88,6 +88,7 @@ export type Order = {
   customerId: string
   customerEmail?: string
   customerName?: string
+  additionalReceivingEmails?: string[]
   cartId: string
   status: OrderStatus
   paymentStatus: PaymentStatus

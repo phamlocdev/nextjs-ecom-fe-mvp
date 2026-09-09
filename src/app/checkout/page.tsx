@@ -1,18 +1,20 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { CartLineItems } from '@/components/customer/cart-line-items'
 import { ResourceError } from '@/components/resource-error'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useActiveCart } from '@/hooks/use-active-cart'
 import { useCartProductDetails } from '@/hooks/use-cart-product-details'
 import { useCartQuery } from '@/hooks/use-carts'
-import { useOrdersQuery, usePlaceOrderMutation } from '@/hooks/use-orders'
+import { usePlaceOrderMutation } from '@/hooks/use-orders'
 import { useRequireAuth } from '@/hooks/use-require-auth'
 import { toApiClientError } from '@/lib/api/errors'
 import { formatVnd } from '@/lib/format'
@@ -21,6 +23,7 @@ export default function CheckoutPage() {
   const router = useRouter()
   const { isAuthenticated, isHydrating } = useRequireAuth()
   const { activeCartId, isHydrated: isCartHydrated, clearActiveCart } = useActiveCart()
+  const [additionalReceivingEmailsInput, setAdditionalReceivingEmailsInput] = useState('')
   const cartResult = useCartQuery(activeCartId, isAuthenticated && isCartHydrated)
   const placeOrderMutation = usePlaceOrderMutation()
   const cartError = cartResult.error ? toApiClientError(cartResult.error) : null
@@ -75,8 +78,23 @@ export default function CheckoutPage() {
       return
     }
 
+    const additionalReceivingEmails = parseAdditionalReceivingEmails(additionalReceivingEmailsInput)
+    if (additionalReceivingEmails.invalidEmails.length > 0) {
+      toast.error(`Invalid email: ${additionalReceivingEmails.invalidEmails[0]}`)
+      return
+    }
+
+    if (additionalReceivingEmails.emails.length > 49) {
+      toast.error('You can add up to 49 additional receiving emails.')
+      return
+    }
+
     try {
-      const response = await placeOrderMutation.mutateAsync(activeCartId)
+      const response = await placeOrderMutation.mutateAsync({
+        cartId: activeCartId,
+        additionalReceivingEmails:
+          additionalReceivingEmails.emails.length > 0 ? additionalReceivingEmails.emails : undefined,
+      })
       toast.success('Order request accepted. We are preparing your checkout.')
       router.push(`/orders/${encodeURIComponent(response.orderId)}`)
     } catch (error) {
@@ -116,6 +134,19 @@ export default function CheckoutPage() {
               <span>Total</span>
               <span>{formatVnd(totalAmount)}</span>
             </div>
+            <div className='space-y-2 pt-2'>
+              <Label htmlFor='additionalReceivingEmails'>Additional receiving emails</Label>
+              <Input
+                id='additionalReceivingEmails'
+                value={additionalReceivingEmailsInput}
+                onChange={(event) => setAdditionalReceivingEmailsInput(event.target.value)}
+                placeholder='a@gmail.com, b@gmail.com'
+                disabled={placeOrderMutation.isLoading}
+              />
+              <p className='text-xs text-muted-foreground'>
+                Separate multiple recipients with commas.
+              </p>
+            </div>
           </CardContent>
           <CardFooter className='flex-col gap-3'>
             <Button
@@ -134,6 +165,27 @@ export default function CheckoutPage() {
       </aside>
     </div>
   )
+}
+
+function parseAdditionalReceivingEmails(value: string): {
+  emails: string[]
+  invalidEmails: string[]
+} {
+  const emails = Array.from(
+    new Set(
+      value
+        .split(',')
+        .map((email) => email.trim().toLowerCase())
+        .filter(Boolean),
+    ),
+  )
+  const invalidEmails = emails.filter((email) => !isValidEmail(email))
+
+  return { emails, invalidEmails }
+}
+
+function isValidEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
 }
 
 function CheckoutEmptyState() {

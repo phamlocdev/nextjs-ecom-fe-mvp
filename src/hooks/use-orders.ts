@@ -6,6 +6,7 @@ import {
   placeOrder,
   triggerOrderPayment,
   type FindAllOrdersQueryParams,
+  type PlaceOrderInput,
 } from '@/lib/api/orders'
 import type { OrderDetails } from '@/lib/types'
 
@@ -40,7 +41,7 @@ export function useOrderQuery(orderId: string, options?: { pollPending?: boolean
 export function usePlaceOrderMutation() {
   const queryClient = useQueryClient()
 
-  return useMutation((cartId: string) => placeOrder(cartId), {
+  return useMutation((input: PlaceOrderInput) => placeOrder(input), {
     onSuccess: (response) => {
       void queryClient.invalidateQueries(ORDER_QUERY_KEYS.lists())
       void queryClient.invalidateQueries(ORDER_QUERY_KEYS.detail(response.orderId))
