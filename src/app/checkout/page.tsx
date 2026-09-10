@@ -8,9 +8,9 @@ import { CartLineItems } from '@/components/customer/cart-line-items'
 import { ResourceError } from '@/components/resource-error'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Textarea } from '@/components/ui/textarea'
 import { useActiveCart } from '@/hooks/use-active-cart'
 import { useCartProductDetails } from '@/hooks/use-cart-product-details'
 import { useCartQuery } from '@/hooks/use-carts'
@@ -27,8 +27,12 @@ export default function CheckoutPage() {
   const cartResult = useCartQuery(activeCartId, isAuthenticated && isCartHydrated)
   const placeOrderMutation = usePlaceOrderMutation()
   const cartError = cartResult.error ? toApiClientError(cartResult.error) : null
-  const { items, totalAmount, isLoading: isProductsLoading, error: cartProductsError } =
-    useCartProductDetails(cartResult.data)
+  const {
+    items,
+    totalAmount,
+    isLoading: isProductsLoading,
+    error: cartProductsError,
+  } = useCartProductDetails(cartResult.data)
 
   useEffect(() => {
     if (cartError?.statusCode === 404) {
@@ -50,7 +54,11 @@ export default function CheckoutPage() {
 
   if (cartError && cartError.statusCode !== 404) {
     return (
-      <ResourceError title='Checkout cart error' message={cartError.message} details={cartError.details} />
+      <ResourceError
+        title='Checkout cart error'
+        message={cartError.message}
+        details={cartError.details}
+      />
     )
   }
 
@@ -93,7 +101,9 @@ export default function CheckoutPage() {
       const response = await placeOrderMutation.mutateAsync({
         cartId: activeCartId,
         additionalReceivingEmails:
-          additionalReceivingEmails.emails.length > 0 ? additionalReceivingEmails.emails : undefined,
+          additionalReceivingEmails.emails.length > 0
+            ? additionalReceivingEmails.emails
+            : undefined,
       })
       toast.success('Order request accepted. We are preparing your checkout.')
       router.push(`/orders/${encodeURIComponent(response.orderId)}`)
@@ -136,11 +146,13 @@ export default function CheckoutPage() {
             </div>
             <div className='space-y-2 pt-2'>
               <Label htmlFor='additionalReceivingEmails'>Additional receiving emails</Label>
-              <Input
+              <Textarea
                 id='additionalReceivingEmails'
                 value={additionalReceivingEmailsInput}
                 onChange={(event) => setAdditionalReceivingEmailsInput(event.target.value)}
                 placeholder='a@gmail.com, b@gmail.com'
+                rows={20}
+                className='h-40'
                 disabled={placeOrderMutation.isLoading}
               />
               <p className='text-xs text-muted-foreground'>
@@ -157,7 +169,10 @@ export default function CheckoutPage() {
             >
               {placeOrderMutation.isLoading ? 'Submitting order...' : 'Place order'}
             </Button>
-            <Link href='/cart' className={buttonVariants({ variant: 'outline', className: 'w-full' })}>
+            <Link
+              href='/cart'
+              className={buttonVariants({ variant: 'outline', className: 'w-full' })}
+            >
               Back to cart
             </Link>
           </CardFooter>

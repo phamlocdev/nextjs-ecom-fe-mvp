@@ -14,6 +14,7 @@ import {
   Store,
   Tags,
   UserCircle,
+  Users,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { getClaimString, useAuthStore } from '@/store/auth-store'
@@ -25,6 +26,8 @@ const navItems = [
   { href: '/admin/products', label: 'Products', icon: Package },
   { href: '/admin/inventories', label: 'Inventories', icon: Layers3 },
   { href: '/admin/categories', label: 'Categories', icon: Tags },
+  { href: '/admin/orders', label: 'Orders', icon: CreditCard },
+  { href: '/admin/users', label: 'Accounts', icon: Users, adminOnly: true },
   { href: '/admin/profile', label: 'Profile', icon: UserCircle },
 ]
 
@@ -36,8 +39,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const email = getClaimString(idTokenClaims, 'email')
   const username = getClaimString(idTokenClaims, 'cognito:username')
   const displayName = email ?? username
-  const hasAdminAccess = hasRole(idTokenClaims, 'admin') || hasRole(idTokenClaims, 'manager')
+  const isAdmin = hasRole(idTokenClaims, 'admin')
+  const hasAdminAccess = isAdmin || hasRole(idTokenClaims, 'manager')
   const isCustomerSignedIn = isAuthenticated && !hasAdminAccess
+  const visibleNavItems = navItems.filter((item) => !item.adminOnly || isAdmin)
 
   async function handleSignOut() {
     try {
@@ -99,7 +104,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             >
               Admin
             </div>
-            {navItems.map((item) => {
+            {visibleNavItems.map((item) => {
               const Icon = item.icon
               const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`)
 
@@ -143,7 +148,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 >
                   <Store className='size-4' />
                 </Link>
-                {navItems.map((item) => {
+                {visibleNavItems.map((item) => {
                   const Icon = item.icon
                   const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`)
 

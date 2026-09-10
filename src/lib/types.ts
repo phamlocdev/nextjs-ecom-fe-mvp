@@ -1,8 +1,13 @@
 export type ProductStatus = 'ACTIVE' | 'INACTIVE'
 export type CartStatus = 'ACTIVE' | 'EXPIRED'
-export type OrderStatus = 'PENDING' | 'RESERVED' | 'CONFIRMED' | 'CANCELLED' | 'FAILED' | 'EXPIRED'
+export type OrderStatus =
+  'PENDING' | 'RESERVED' | 'CONFIRMED' | 'SHIPPED' | 'CANCELLED' | 'FAILED' | 'EXPIRED'
 export type PaymentStatus = 'NOT_STARTED' | 'PROCESSING' | 'PAID' | 'FAILED'
 export type InventoryStockStatus = 'IN_STOCK' | 'LOW_STOCK' | 'OUT_OF_STOCK'
+export type EmailDeliveryStatus =
+  'PENDING' | 'SENT' | 'DELIVERED' | 'BOUNCED' | 'COMPLAINED' | 'REJECTED' | 'FAILED' | 'SKIPPED'
+export type EmailType = 'ORDER_CONFIRMATION' | 'WELCOME_NEW_CUSTOMER' | 'SHIPPED_ORDER_NOTIFICATION'
+export type EmailContextType = 'ORDER' | 'USER'
 
 export type Product = {
   productId: string
@@ -37,6 +42,68 @@ export type UserProfile = {
   avatarReadUrlExpiresInSeconds?: number
   createdAt: string
   updatedAt: string
+}
+
+export type ManagedUser = {
+  username: string
+  enabled: boolean
+  status?: string
+  name?: string
+  sub?: string
+  email?: string
+  emailVerified: boolean
+  groups: string[]
+  createdAt?: string
+  updatedAt?: string
+  welcomeEmailTracking?: EmailDeliverySummary
+}
+
+export type EmailDeliverySummary = {
+  recipientEmail: string
+  emailType: EmailType
+  status: EmailDeliveryStatus
+  updatedAt: string
+  emailId: string
+  isRetryable: boolean
+  attemptNumber: number
+}
+
+export type EmailTracking = {
+  emailId: string
+  emailType: EmailType
+  recipientEmail: string
+  status: EmailDeliveryStatus
+  contextType: EmailContextType
+  contextId: string
+  contextKey: string
+  sesMessageId?: string
+  attemptNumber: number
+  resendOfEmailId?: string
+  bounceType?: 'Permanent' | 'Transient' | 'Undetermined'
+  bounceSubType?: string
+  complaintSubType?: string
+  failureReason?: string
+  configurationSetName?: string
+  createdAt: string
+  updatedAt: string
+  sentAt?: string
+  deliveredAt?: string
+  bouncedAt?: string
+  complainedAt?: string
+  failedAt?: string
+  isRetryable: boolean
+}
+
+export type EmailDeliveryStatistics = Record<EmailType, Record<EmailDeliveryStatus, number>>
+
+export type ResendEmailResult = {
+  orderId?: string
+  userId?: string
+  emailType: EmailType
+  recipientEmails: string[]
+  resentCount: number
+  status: string
+  reason?: string
 }
 
 export type InventoryRecord = {
@@ -94,6 +161,7 @@ export type Order = {
   paymentStatus: PaymentStatus
   createdAt: string
   updatedAt: string
+  shippedAt?: string
   reservedAt?: string
   paymentExpiresAt?: number
   paymentRequestedAt?: string
