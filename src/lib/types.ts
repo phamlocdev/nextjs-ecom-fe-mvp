@@ -1,6 +1,7 @@
 export type ProductStatus = 'ACTIVE' | 'INACTIVE'
 export type CartStatus = 'ACTIVE' | 'EXPIRED'
-export type OrderStatus = 'PENDING' | 'RESERVED' | 'CONFIRMED' | 'CANCELLED' | 'FAILED' | 'EXPIRED'
+export type OrderStatus =
+  'PENDING' | 'RESERVED' | 'CONFIRMED' | 'SHIPPED' | 'CANCELLED' | 'FAILED' | 'EXPIRED'
 export type PaymentStatus = 'NOT_STARTED' | 'PROCESSING' | 'PAID' | 'FAILED'
 export type InventoryStockStatus = 'IN_STOCK' | 'LOW_STOCK' | 'OUT_OF_STOCK'
 
@@ -80,6 +81,8 @@ export type Order = {
   paymentStatus: PaymentStatus
   createdAt: string
   updatedAt: string
+  shippedAt?: string
+  cancelledAt?: string
   reservedAt?: string
   paymentExpiresAt?: number
   paymentRequestedAt?: string

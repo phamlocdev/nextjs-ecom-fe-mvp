@@ -2,6 +2,7 @@ import { apiClient } from '@/lib/api/api-client'
 import type {
   Order,
   OrderDetails,
+  OrderStatus,
   PaginatedResponse,
   PaymentStatus,
   PlaceOrderResponse,
@@ -43,6 +44,14 @@ export async function placeOrder(cartId: string): Promise<PlaceOrderResponse> {
 
 export async function triggerOrderPayment(orderId: string): Promise<TriggerPaymentResponse> {
   const response = await apiClient.post<TriggerPaymentResponse>(`/orders/${orderId}/pay`)
+  return response.data
+}
+
+export async function updateOrderStatus(
+  orderId: string,
+  status: Extract<OrderStatus, 'SHIPPED' | 'CANCELLED'>,
+): Promise<Order> {
+  const response = await apiClient.patch<Order>(`/orders/${orderId}/status`, { status })
   return response.data
 }
 

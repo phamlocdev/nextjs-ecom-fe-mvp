@@ -5,9 +5,10 @@ import {
   ORDER_QUERY_KEYS,
   placeOrder,
   triggerOrderPayment,
+  updateOrderStatus,
   type FindAllOrdersQueryParams,
 } from '@/lib/api/orders'
-import type { OrderDetails } from '@/lib/types'
+import type { OrderDetails, OrderStatus } from '@/lib/types'
 
 export function useOrdersQuery(params?: FindAllOrdersQueryParams) {
   return useQuery(ORDER_QUERY_KEYS.list(params), () => findAllOrders(params), {
@@ -15,26 +16,25 @@ export function useOrdersQuery(params?: FindAllOrdersQueryParams) {
   })
 }
 
-export function useOrderQuery(orderId: string, options?: { pollPending?: boolean; pollPayment?: boolean }) {
-  return useQuery<OrderDetails>(
-    ORDER_QUERY_KEYS.detail(orderId),
-    () => findOrderById(orderId),
-    {
-      enabled: Boolean(orderId),
-      refetchInterval: (data) => {
-        if (!data) {
-          return false
-        }
-        if (options?.pollPending && data.status === 'PENDING') {
-          return 2000
-        }
-        if (options?.pollPayment && data.paymentStatus === 'PROCESSING') {
-          return 2000
-        }
+export function useOrderQuery(
+  orderId: string,
+  options?: { pollPending?: boolean; pollPayment?: boolean },
+) {
+  return useQuery<OrderDetails>(ORDER_QUERY_KEYS.detail(orderId), () => findOrderById(orderId), {
+    enabled: Boolean(orderId),
+    refetchInterval: (data) => {
+      if (!data) {
         return false
-      },
+      }
+      if (options?.pollPending && data.status === 'PENDING') {
+        return 2000
+      }
+      if (options?.pollPayment && data.paymentStatus === 'PROCESSING') {
+        return 2000
+      }
+      return false
     },
-  )
+  })
 }
 
 export function usePlaceOrderMutation() {
@@ -59,4 +59,21 @@ export function useTriggerPaymentMutation() {
       ])
     },
   })
+}
+
+export function useUpdateOrderStatusMutation() {
+  const queryClient = useQueryClient()
+
+  return useMutation(
+    (input: { orderId: string; status: Extract<OrderStatus, 'SHIPPED' | 'CANCELLED'> }) =>
+      updateOrderStatus(input.orderId, input.status),
+    {
+      onSuccess: async (order) => {
+        await Promise.all([
+          queryClient.invalidateQueries(ORDER_QUERY_KEYS.lists()),
+          queryClient.invalidateQueries(ORDER_QUERY_KEYS.detail(order.orderId)),
+        ])
+      },
+    },
+  )
 }

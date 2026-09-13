@@ -9,10 +9,13 @@ export function PaymentStatusBadge({ status }: { status: PaymentStatus }) {
   return <Badge variant={paymentStatusVariant(status)}>{status}</Badge>
 }
 
-function orderStatusVariant(status: OrderStatus): 'default' | 'secondary' | 'destructive' | 'outline' {
+function orderStatusVariant(
+  status: OrderStatus,
+): 'default' | 'secondary' | 'destructive' | 'outline' {
   switch (status) {
     case 'CONFIRMED':
     case 'RESERVED':
+    case 'SHIPPED':
       return 'default'
     case 'FAILED':
     case 'CANCELLED':
