@@ -11,7 +11,9 @@ import { toApiClientError } from '@/lib/api/errors'
 export default function EditProductPage() {
   const params = useParams<{ productId: string }>()
   const { isAuthenticated, isHydrating } = useRequireAuth()
-  const productResult = useProductQuery(params.productId)
+  const productResult = useProductQuery(params.productId, {
+    enabled: isAuthenticated && !isHydrating,
+  })
   const productError = productResult.error ? toApiClientError(productResult.error) : null
 
   if (isHydrating || !isAuthenticated || productResult.isLoading) {

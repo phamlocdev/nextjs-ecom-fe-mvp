@@ -7,17 +7,28 @@ import { ResourceError } from '@/components/resource-error'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useCatalogQueryParams } from '@/hooks/use-catalog-query-params'
 import { useCategoriesQuery } from '@/hooks/use-categories'
+import { useRequireAuth } from '@/hooks/use-require-auth'
 import { toApiClientError } from '@/lib/api/errors'
 
 export default function CategoriesPage() {
+  const { isAuthenticated, isHydrating } = useRequireAuth()
   const { limit, paginationParams, setCursor, setLimit } = useCatalogQueryParams()
-  const categoriesResult = useCategoriesQuery({
-    limit,
-    ...(paginationParams.cursor ? { cursor: paginationParams.cursor } : {}),
-  })
+  const categoriesResult = useCategoriesQuery(
+    {
+      limit,
+      ...(paginationParams.cursor ? { cursor: paginationParams.cursor } : {}),
+    },
+    {
+      enabled: isAuthenticated && !isHydrating,
+    },
+  )
   const categoriesPage = categoriesResult.data
   const categories = categoriesPage?.items ?? []
   const error = categoriesResult.error ? toApiClientError(categoriesResult.error) : null
+
+  if (isHydrating || !isAuthenticated) {
+    return <CategoriesSkeleton />
+  }
 
   return (
     <div className='space-y-6'>
