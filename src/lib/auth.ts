@@ -144,6 +144,36 @@ export async function getAccessToken(forceRefresh = false): Promise<string | nul
   }
 }
 
+export function decodeJwtPayload(token: string): AuthClaims | null {
+  try {
+    const [, payload = ''] = token.split('.')
+    if (!payload) {
+      return null
+    }
+
+    const normalized = payload.replace(/-/g, '+').replace(/_/g, '/')
+    const padded = normalized.padEnd(
+      normalized.length + ((4 - (normalized.length % 4 || 4)) % 4),
+      '=',
+    )
+
+    return JSON.parse(atob(padded)) as AuthClaims
+  } catch {
+    return null
+  }
+}
+
+export function isJwtExpired(token: string | null | undefined, skewMs = 30_000): boolean {
+  if (!token) {
+    return false
+  }
+
+  const payload = decodeJwtPayload(token)
+  const expiresAt = payload?.exp
+
+  return typeof expiresAt === 'number' && expiresAt * 1000 <= Date.now() + skewMs
+}
+
 export async function signInWithPassword(input: SignInInput): Promise<void> {
   configureAmplify()
   await signIn({ username: input.username, password: input.password })
@@ -351,16 +381,14 @@ async function storeHostedUiTokens(tokens: OAuthTokenResponse): Promise<void> {
 }
 
 function decodeJwt(token: string): JWT {
-  const [, payload = ''] = token.split('.')
-  const normalized = payload.replace(/-/g, '+').replace(/_/g, '/')
-  const padded = normalized.padEnd(
-    normalized.length + ((4 - (normalized.length % 4 || 4)) % 4),
-    '=',
-  )
-  const json = JSON.parse(atob(padded)) as Record<string, unknown>
+  const payload = decodeJwtPayload(token)
+
+  if (!payload) {
+    throw new Error('Unable to decode Cognito token payload.')
+  }
 
   return {
-    payload: json,
+    payload,
     toString: () => token,
   } as JWT
 }

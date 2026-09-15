@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import type { ComponentType } from 'react'
-import { Activity, AlertCircle, ArrowRight, Layers3, Package, Tags } from 'lucide-react'
+import { AlertCircle, ArrowRight, Layers3, Package, Tags } from 'lucide-react'
 import { formatVnd } from '@/lib/format'
 import type { Category, Product } from '@/lib/types'
 import { ResourceError } from '@/components/resource-error'
@@ -12,11 +12,19 @@ import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { useProductsQuery } from '@/hooks/use-products'
 import { useCategoriesQuery } from '@/hooks/use-categories'
+import { useRequireAuth } from '@/hooks/use-require-auth'
 import { toApiClientError } from '@/lib/api/errors'
+import { Skeleton } from '@/components/ui/skeleton'
 
 export default function AdminDashboardPage() {
-  const productsResult = useProductsQuery()
-  const categoriesResult = useCategoriesQuery()
+  const { isAuthenticated, isHydrating } = useRequireAuth()
+  const canLoadProtectedResources = isAuthenticated && !isHydrating
+  const productsResult = useProductsQuery(undefined, {
+    enabled: canLoadProtectedResources,
+  })
+  const categoriesResult = useCategoriesQuery(undefined, {
+    enabled: canLoadProtectedResources,
+  })
 
   const products = productsResult.data?.items ?? []
   const categories = categoriesResult.data?.items ?? []
@@ -28,6 +36,10 @@ export default function AdminDashboardPage() {
 
   const productsError = productsResult.error ? toApiClientError(productsResult.error) : null
   const categoriesError = categoriesResult.error ? toApiClientError(categoriesResult.error) : null
+
+  if (isHydrating || !isAuthenticated) {
+    return <Skeleton className='h-96 w-full' />
+  }
 
   return (
     <div className='space-y-6'>

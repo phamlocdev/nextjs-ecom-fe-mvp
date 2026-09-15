@@ -10,15 +10,19 @@ import {
 } from '@/lib/api/categories'
 import type { CategoryCreateValues, CategoryUpdateValues } from '@/lib/schemas'
 
-export function useCategoriesQuery(params?: FindAllCategoriesQueryParams) {
+export function useCategoriesQuery(
+  params?: FindAllCategoriesQueryParams,
+  options?: { enabled?: boolean },
+) {
   return useQuery(CATEGORY_QUERY_KEYS.list(params), () => findAllCategories(params), {
+    enabled: options?.enabled ?? true,
     keepPreviousData: true,
   })
 }
 
-export function useCategoryQuery(categoryId: string) {
+export function useCategoryQuery(categoryId: string, options?: { enabled?: boolean }) {
   return useQuery(CATEGORY_QUERY_KEYS.detail(categoryId), () => findCategoryById(categoryId), {
-    enabled: Boolean(categoryId),
+    enabled: Boolean(categoryId) && (options?.enabled ?? true),
   })
 }
 

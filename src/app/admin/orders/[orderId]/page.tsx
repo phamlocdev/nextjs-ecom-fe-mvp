@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
+import { OrderEmailTrackingPanel } from '@/components/email/order-email-tracking-panel'
 import { ResourceError } from '@/components/resource-error'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useOrderQuery } from '@/hooks/use-orders'
@@ -47,7 +48,9 @@ export default function AdminOrderDetailPage() {
           <div>Updated: {formatDateTime(order.updatedAt)}</div>
           <div>Total: {formatVnd(order.totalAmount ?? 0)}</div>
           {order.failureReason ? <div>Failure: {order.failureReason}</div> : null}
-          {order.paymentFailureReason ? <div>Payment failure: {order.paymentFailureReason}</div> : null}
+          {order.paymentFailureReason ? (
+            <div>Payment failure: {order.paymentFailureReason}</div>
+          ) : null}
         </CardContent>
       </Card>
 
@@ -75,6 +78,8 @@ export default function AdminOrderDetailPage() {
           ))}
         </CardContent>
       </Card>
+
+      <OrderEmailTrackingPanel orderId={order.orderId} />
     </div>
   )
 }

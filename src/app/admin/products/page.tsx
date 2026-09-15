@@ -19,8 +19,16 @@ import { cn } from '@/lib/utils'
 export default function ProductsPage() {
   const { isAuthenticated, isHydrating } = useRequireAuth()
   const { filters, paginationParams, setCursor, setFilters, setLimit } = useCatalogQueryParams()
-  const productsResult = useProductsQuery(paginationParams)
-  const categoriesResult = useCategoriesQuery({ limit: 200 })
+  const canLoadProtectedResources = isAuthenticated && !isHydrating
+  const productsResult = useProductsQuery(paginationParams, {
+    enabled: canLoadProtectedResources,
+  })
+  const categoriesResult = useCategoriesQuery(
+    { limit: 200 },
+    {
+      enabled: canLoadProtectedResources,
+    },
+  )
   const productsPage = productsResult.data
   const products = productsPage?.items ?? []
   const productIds = products.map((product) => product.productId)
@@ -29,7 +37,7 @@ export default function ProductsPage() {
       productIds,
     },
     {
-      enabled: isAuthenticated && !isHydrating && Boolean(productsPage) && productIds.length > 0,
+      enabled: canLoadProtectedResources && Boolean(productsPage) && productIds.length > 0,
     },
   )
   const categories = categoriesResult.data?.items ?? []

@@ -27,7 +27,12 @@ export default function InventoriesPage() {
   const inventoriesResult = useInventoriesQuery(paginationParams, {
     enabled: isAuthenticated && !isHydrating,
   })
-  const categoriesResult = useCategoriesQuery({ limit: 200 })
+  const categoriesResult = useCategoriesQuery(
+    { limit: 200 },
+    {
+      enabled: isAuthenticated && !isHydrating,
+    },
+  )
   const inventoriesPage = inventoriesResult.data
   const inventories = inventoriesPage?.items ?? []
   const categories = categoriesResult.data?.items ?? []

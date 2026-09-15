@@ -11,15 +11,19 @@ import {
 import { INVENTORY_QUERY_KEYS } from '@/lib/api/inventories'
 import type { ProductFormValues } from '@/lib/schemas'
 
-export function useProductsQuery(params?: FindAllProductsQueryParams) {
+export function useProductsQuery(
+  params?: FindAllProductsQueryParams,
+  options?: { enabled?: boolean },
+) {
   return useQuery(PRODUCT_QUERY_KEYS.list(params), () => findAllProducts(params), {
+    enabled: options?.enabled ?? true,
     keepPreviousData: true,
   })
 }
 
-export function useProductQuery(productId: string) {
+export function useProductQuery(productId: string, options?: { enabled?: boolean }) {
   return useQuery(PRODUCT_QUERY_KEYS.detail(productId), () => findProductById(productId), {
-    enabled: Boolean(productId),
+    enabled: Boolean(productId) && (options?.enabled ?? true),
   })
 }
 
