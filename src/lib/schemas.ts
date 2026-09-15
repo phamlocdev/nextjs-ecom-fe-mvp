@@ -73,6 +73,31 @@ const cognitoPasswordSchema = z
   .regex(/[A-Z]/, 'Password must include an uppercase letter')
   .regex(/[0-9]/, 'Password must include a number')
 
+export const setSignInPasswordSchema = z
+  .object({
+    password: cognitoPasswordSchema,
+    confirmPassword: z.string().min(1, 'Confirm password is required'),
+  })
+  .refine((value) => value.password === value.confirmPassword, {
+    message: 'Passwords do not match',
+    path: ['confirmPassword'],
+  })
+
+export const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, 'Current password is required'),
+    newPassword: cognitoPasswordSchema,
+    confirmPassword: z.string().min(1, 'Confirm password is required'),
+  })
+  .refine((value) => value.newPassword === value.confirmPassword, {
+    message: 'Passwords do not match',
+    path: ['confirmPassword'],
+  })
+  .refine((value) => value.currentPassword !== value.newPassword, {
+    message: 'New password must be different from the current password',
+    path: ['newPassword'],
+  })
+
 export const signInSchema = z.object({
   username: z.string().trim().min(1, 'Email or username is required'),
   password: z.string().min(1, 'Password is required'),
@@ -115,6 +140,10 @@ export type ProductFormValues = z.output<typeof productFormSchema>
 export type ProductImageValues = z.output<typeof productImageSchema>
 export type UserProfileFormInput = z.input<typeof userProfileFormSchema>
 export type UserProfileFormValues = z.output<typeof userProfileFormSchema>
+export type SetSignInPasswordInput = z.input<typeof setSignInPasswordSchema>
+export type SetSignInPasswordValues = z.output<typeof setSignInPasswordSchema>
+export type ChangePasswordInput = z.input<typeof changePasswordSchema>
+export type ChangePasswordValues = z.output<typeof changePasswordSchema>
 export type CategoryCreateInput = z.input<typeof categoryCreateSchema>
 export type CategoryCreateValues = z.output<typeof categoryCreateSchema>
 export type CategoryUpdateValues = z.output<typeof categoryUpdateSchema>

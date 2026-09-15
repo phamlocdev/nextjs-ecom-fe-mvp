@@ -1,6 +1,9 @@
-import { RefreshCcw } from 'lucide-react'
+'use client'
+
+import Link from 'next/link'
+import { Ban, KeyRound, RefreshCcw } from 'lucide-react'
 import { EmailStatusBadge } from '@/components/email/email-status-badge'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import {
   Table,
   TableBody,
@@ -11,15 +14,26 @@ import {
 } from '@/components/ui/table'
 import { formatDateTime } from '@/lib/format'
 import type { ManagedUser } from '@/lib/types'
+import { cn } from '@/lib/utils'
 
 export function AccountsTable({
   users,
   resendingUserId,
+  currentUserId,
+  disablingUserId,
+  resettingPasswordUserId,
   onResendWelcome,
+  onDisableUser,
+  onResetPassword,
 }: {
   users: ManagedUser[]
   resendingUserId?: string
+  currentUserId?: string | null
+  disablingUserId?: string
+  resettingPasswordUserId?: string
   onResendWelcome: (user: ManagedUser) => void
+  onDisableUser: (user: ManagedUser) => void
+  onResetPassword: (user: ManagedUser) => void
 }) {
   if (users.length === 0) {
     return (
@@ -49,6 +63,8 @@ export function AccountsTable({
             const tracking = user.welcomeEmailTracking
             const canResend = Boolean(user.sub && tracking?.recipientEmail && tracking.isRetryable)
             const isResending = resendingUserId === user.sub
+            const isSelf = Boolean(currentUserId && user.sub === currentUserId)
+            const canMutate = Boolean(user.sub && !isSelf)
 
             return (
               <TableRow key={user.username}>
@@ -68,7 +84,14 @@ export function AccountsTable({
                     </p>
                   </div>
                 </TableCell>
-                <TableCell className='text-sm'>{user.groups.join(', ') || 'No groups'}</TableCell>
+                <TableCell>
+                  <div className='space-y-1 text-sm'>
+                    <p>{user.groups.join(', ') || 'No groups'}</p>
+                    <p className='text-xs text-muted-foreground'>
+                      {user.permissions.length} permissions
+                    </p>
+                  </div>
+                </TableCell>
                 <TableCell className='text-sm text-muted-foreground'>
                   {user.enabled ? (user.status ?? 'Enabled') : 'Disabled'}
                 </TableCell>
@@ -86,7 +109,16 @@ export function AccountsTable({
                   {user.createdAt ? formatDateTime(user.createdAt) : 'N/A'}
                 </TableCell>
                 <TableCell>
-                  <div className='flex justify-end'>
+                  <div className='flex justify-end gap-2'>
+                    {user.sub ? (
+                      <Link
+                        href={`/admin/users/${encodeURIComponent(user.sub)}/access`}
+                        className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}
+                      >
+                        <KeyRound />
+                        Permissions
+                      </Link>
+                    ) : null}
                     <Button
                       type='button'
                       variant='outline'
@@ -96,6 +128,26 @@ export function AccountsTable({
                     >
                       <RefreshCcw />
                       Resend
+                    </Button>
+                    <Button
+                      type='button'
+                      variant='outline'
+                      size='sm'
+                      disabled={!canMutate || resettingPasswordUserId === user.sub}
+                      onClick={() => onResetPassword(user)}
+                    >
+                      <KeyRound />
+                      Reset
+                    </Button>
+                    <Button
+                      type='button'
+                      variant='destructive'
+                      size='sm'
+                      disabled={!canMutate || !user.enabled || disablingUserId === user.sub}
+                      onClick={() => onDisableUser(user)}
+                    >
+                      <Ban />
+                      Disable
                     </Button>
                   </div>
                 </TableCell>

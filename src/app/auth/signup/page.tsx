@@ -3,10 +3,10 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { UserPlus } from 'lucide-react'
+import { Globe, UserPlus } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
-import { signUpWithEmail } from '@/lib/auth'
+import { redirectToGoogle, signUpWithEmail } from '@/lib/auth'
 import { signUpSchema, type SignUpInput, type SignUpValues } from '@/lib/schemas'
 import { PasswordInput } from '@/components/auth/password-input'
 import { Button } from '@/components/ui/button'
@@ -38,6 +38,14 @@ export default function SignUpPage() {
       router.push(`/auth/confirm?username=${encodeURIComponent(values.username)}`)
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Unable to sign up')
+    }
+  }
+
+  async function handleGoogleSignUp() {
+    try {
+      await redirectToGoogle()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Unable to start Google sign up')
     }
   }
 
@@ -105,6 +113,10 @@ export default function SignUpPage() {
               {isPending ? 'Creating...' : 'Sign up'}
             </Button>
           </form>
+          <Button type='button' variant='outline' className='w-full' onClick={handleGoogleSignUp}>
+            <Globe />
+            Continue with Google
+          </Button>
           <Link href='/auth/login' className='block text-sm text-primary hover:underline'>
             Back to sign in
           </Link>

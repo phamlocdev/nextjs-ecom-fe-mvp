@@ -2,6 +2,7 @@
 
 import { Amplify } from 'aws-amplify'
 import {
+  confirmSignIn,
   confirmResetPassword,
   confirmSignUp,
   fetchAuthSession,
@@ -11,6 +12,7 @@ import {
   signInWithRedirect,
   signOut,
   signUp,
+  updatePassword,
   type JWT,
 } from 'aws-amplify/auth'
 import { cognitoUserPoolsTokenProvider } from 'aws-amplify/auth/cognito'
@@ -32,6 +34,24 @@ export type AuthSessionSnapshot = {
 export type SignInInput = {
   username: string
   password: string
+}
+
+export type SignInResult =
+  | {
+      status: 'signed-in'
+    }
+  | {
+      status: 'new-password-required'
+      username: string
+    }
+
+export type CompleteNewPasswordInput = {
+  newPassword: string
+}
+
+export type ChangePasswordInput = {
+  currentPassword: string
+  newPassword: string
 }
 
 export type SignUpInput = {
@@ -174,9 +194,39 @@ export function isJwtExpired(token: string | null | undefined, skewMs = 30_000):
   return typeof expiresAt === 'number' && expiresAt * 1000 <= Date.now() + skewMs
 }
 
-export async function signInWithPassword(input: SignInInput): Promise<void> {
+export async function signInWithPassword(input: SignInInput): Promise<SignInResult> {
   configureAmplify()
-  await signIn({ username: input.username, password: input.password })
+  const result = await signIn({ username: input.username, password: input.password })
+
+  if (result.isSignedIn) {
+    return { status: 'signed-in' }
+  }
+
+  if (result.nextStep.signInStep === 'CONFIRM_SIGN_IN_WITH_NEW_PASSWORD_REQUIRED') {
+    return {
+      status: 'new-password-required',
+      username: input.username,
+    }
+  }
+
+  throw new Error('This account requires an unsupported sign-in challenge.')
+}
+
+export async function completeNewPasswordChallenge(input: CompleteNewPasswordInput): Promise<void> {
+  configureAmplify()
+  const result = await confirmSignIn({ challengeResponse: input.newPassword })
+
+  if (!result.isSignedIn) {
+    throw new Error('This account requires an unsupported sign-in challenge.')
+  }
+}
+
+export async function changeOwnPassword(input: ChangePasswordInput): Promise<void> {
+  configureAmplify()
+  await updatePassword({
+    oldPassword: input.currentPassword,
+    newPassword: input.newPassword,
+  })
 }
 
 export async function signUpWithEmail(input: SignUpInput): Promise<void> {
