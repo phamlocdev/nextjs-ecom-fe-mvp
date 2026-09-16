@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { KeyRound, Send } from 'lucide-react'
 import { useForm } from 'react-hook-form'
@@ -20,6 +21,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 
 export default function ForgotPasswordPage() {
+  const router = useRouter()
   const [codeRequested, setCodeRequested] = useState(false)
   const requestForm = useForm<ForgotPasswordValues>({
     resolver: zodResolver(forgotPasswordSchema),
@@ -58,6 +60,7 @@ export default function ForgotPasswordPage() {
       setCodeRequested(false)
       requestForm.reset()
       confirmForm.reset()
+      router.push('/auth/login')
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Unable to reset password')
     }

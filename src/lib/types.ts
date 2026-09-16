@@ -8,6 +8,28 @@ export type EmailDeliveryStatus =
   'PENDING' | 'SENT' | 'DELIVERED' | 'BOUNCED' | 'COMPLAINED' | 'REJECTED' | 'FAILED' | 'SKIPPED'
 export type EmailType = 'ORDER_CONFIRMATION' | 'WELCOME_NEW_CUSTOMER' | 'SHIPPED_ORDER_NOTIFICATION'
 export type EmailContextType = 'ORDER' | 'USER'
+export type Permission =
+  | 'products:read'
+  | 'products:create'
+  | 'products:update'
+  | 'products:delete'
+  | 'categories:read'
+  | 'categories:create'
+  | 'categories:update'
+  | 'categories:delete'
+  | 'inventories:read'
+  | 'inventories:update'
+  | 'orders:read'
+  | 'orders:update'
+  | 'orders:email:read'
+  | 'orders:email:resend'
+  | 'users:read'
+  | 'users:create'
+  | 'users:update'
+  | 'users:disable'
+  | 'users:permissions:update'
+  | 'users:email:read'
+  | 'users:email:resend'
 
 export type Product = {
   productId: string
@@ -53,6 +75,7 @@ export type ManagedUser = {
   email?: string
   emailVerified: boolean
   groups: string[]
+  permissions: Permission[]
   createdAt?: string
   updatedAt?: string
   welcomeEmailTracking?: EmailDeliverySummary

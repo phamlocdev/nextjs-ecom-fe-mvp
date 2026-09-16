@@ -1,7 +1,14 @@
 import { NextResponse, type NextRequest } from 'next/server'
 
-const protectedRoutes = ['/customer/profile']
+const protectedRoutes = ['/customer/profile', '/cart', '/checkout', '/orders']
 const adminRoutes = ['/admin']
+const adminRoutePermissions: Record<string, string> = {
+  '/admin/products': 'products:read',
+  '/admin/inventories': 'inventories:read',
+  '/admin/categories': 'categories:read',
+  '/admin/orders': 'orders:read',
+  '/admin/users': 'users:read',
+}
 const guestRoutes = [
   '/auth/login',
   '/auth/signup',
@@ -30,7 +37,7 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(loginUrl)
   }
 
-  if (isAdminRoute && !hasRole(authPayloads, ['admin', 'manager'])) {
+  if (isAdminRoute && !hasAdminRouteAccess(pathname, authPayloads)) {
     return NextResponse.redirect(new URL('/', request.url))
   }
 
@@ -50,6 +57,7 @@ type JwtPayload = {
   role?: string
   'custom:role'?: string
   'cognito:groups'?: string[]
+  'app:permissions'?: string[]
 }
 
 function getValidCognitoTokenPayloads(request: NextRequest): JwtPayload[] {
@@ -67,6 +75,29 @@ function getValidCognitoTokenPayloads(request: NextRequest): JwtPayload[] {
     .filter((payload): payload is JwtPayload =>
       Boolean(payload?.exp && payload.exp * 1000 > Date.now()),
     )
+}
+
+function hasAdminRouteAccess(pathname: string, payloads: JwtPayload[]): boolean {
+  if (!hasRole(payloads, ['admin', 'manager'])) {
+    return false
+  }
+
+  const entry = Object.entries(adminRoutePermissions).find(
+    ([route]) => pathname === route || pathname.startsWith(`${route}/`),
+  )
+
+  if (!entry) {
+    return true
+  }
+
+  return hasPermission(payloads, entry[1])
+}
+
+function hasPermission(payloads: JwtPayload[], permission: string): boolean {
+  return payloads.some((payload) => {
+    const permissions = payload['app:permissions']
+    return Array.isArray(permissions) && permissions.includes(permission)
+  })
 }
 
 function decodeJwtPayload(token: string): JwtPayload | null {

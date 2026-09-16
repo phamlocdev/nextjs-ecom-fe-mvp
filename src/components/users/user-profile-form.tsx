@@ -3,16 +3,28 @@
 import { useEffect, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { ImagePlus, Save, Trash2 } from 'lucide-react'
+import { ImagePlus, KeyRound, Save, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
-import { useUpdateUserProfileMutation, useUserProfileQuery } from '@/hooks/use-user-profile'
+import {
+  useSetOwnPasswordMutation,
+  useUpdateUserProfileMutation,
+  useUserProfileQuery,
+} from '@/hooks/use-user-profile'
 import { apiErrorDescription, toApiClientError } from '@/lib/api/errors'
 import { presignUpload, uploadWithPresignedPost } from '@/lib/api/upload'
+import { changeOwnPassword } from '@/lib/auth'
 import {
+  changePasswordSchema,
+  setSignInPasswordSchema,
   userProfileFormSchema,
+  type ChangePasswordInput,
+  type ChangePasswordValues,
+  type SetSignInPasswordInput,
+  type SetSignInPasswordValues,
   type UserProfileFormInput,
   type UserProfileFormValues,
 } from '@/lib/schemas'
+import { PasswordInput } from '@/components/auth/password-input'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -23,6 +35,7 @@ export function UserProfileForm({ title }: { title: string }) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const profileResult = useUserProfileQuery()
   const updateProfileMutation = useUpdateUserProfileMutation()
+  const setPasswordMutation = useSetOwnPasswordMutation()
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null)
   const [removeAvatar, setRemoveAvatar] = useState(false)
@@ -34,6 +47,18 @@ export function UserProfileForm({ title }: { title: string }) {
   const form = useForm<UserProfileFormInput, unknown, UserProfileFormValues>({
     resolver: zodResolver(userProfileFormSchema),
     defaultValues: { name: '' },
+  })
+  const passwordForm = useForm<SetSignInPasswordInput, unknown, SetSignInPasswordValues>({
+    resolver: zodResolver(setSignInPasswordSchema),
+    defaultValues: { password: '', confirmPassword: '' },
+  })
+  const changePasswordForm = useForm<ChangePasswordInput, unknown, ChangePasswordValues>({
+    resolver: zodResolver(changePasswordSchema),
+    defaultValues: {
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: '',
+    },
   })
 
   useEffect(() => {
@@ -106,6 +131,33 @@ export function UserProfileForm({ title }: { title: string }) {
       toast.error(toApiClientError(error).message, { description: apiErrorDescription(error) })
     } finally {
       setIsUploading(false)
+    }
+  }
+
+  async function onPasswordSubmit(values: SetSignInPasswordValues) {
+    try {
+      await setPasswordMutation.mutateAsync({ password: values.password })
+      passwordForm.reset({ password: '', confirmPassword: '' })
+      toast.success('Sign-in password updated')
+    } catch (error) {
+      toast.error(toApiClientError(error).message, { description: apiErrorDescription(error) })
+    }
+  }
+
+  async function onChangePasswordSubmit(values: ChangePasswordValues) {
+    try {
+      await changeOwnPassword({
+        currentPassword: values.currentPassword,
+        newPassword: values.newPassword,
+      })
+      changePasswordForm.reset({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: '',
+      })
+      toast.success('Password changed')
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Unable to change password')
     }
   }
 
@@ -197,6 +249,116 @@ export function UserProfileForm({ title }: { title: string }) {
           <Button type='submit' disabled={isPending}>
             <Save />
             {isPending ? 'Saving...' : 'Save profile'}
+          </Button>
+        </div>
+      </form>
+
+      <form
+        className='grid gap-4 rounded-md border bg-card p-4'
+        onSubmit={changePasswordForm.handleSubmit(onChangePasswordSubmit)}
+      >
+        <div>
+          <h2 className='text-base font-semibold tracking-normal'>Change password</h2>
+          <p className='mt-1 text-sm text-muted-foreground'>
+            Update your password by confirming the current one first.
+          </p>
+        </div>
+        <div className='grid gap-4 sm:grid-cols-3'>
+          <div className='space-y-2'>
+            <Label htmlFor='currentPassword'>Current password</Label>
+            <PasswordInput
+              id='currentPassword'
+              autoComplete='current-password'
+              aria-invalid={Boolean(changePasswordForm.formState.errors.currentPassword)}
+              {...changePasswordForm.register('currentPassword')}
+            />
+            {changePasswordForm.formState.errors.currentPassword ? (
+              <p className='text-xs text-destructive'>
+                {changePasswordForm.formState.errors.currentPassword.message}
+              </p>
+            ) : null}
+          </div>
+          <div className='space-y-2'>
+            <Label htmlFor='newPassword'>New password</Label>
+            <PasswordInput
+              id='newPassword'
+              autoComplete='new-password'
+              aria-invalid={Boolean(changePasswordForm.formState.errors.newPassword)}
+              {...changePasswordForm.register('newPassword')}
+            />
+            {changePasswordForm.formState.errors.newPassword ? (
+              <p className='text-xs text-destructive'>
+                {changePasswordForm.formState.errors.newPassword.message}
+              </p>
+            ) : null}
+          </div>
+          <div className='space-y-2'>
+            <Label htmlFor='confirmNewPassword'>Confirm password</Label>
+            <PasswordInput
+              id='confirmNewPassword'
+              autoComplete='new-password'
+              aria-invalid={Boolean(changePasswordForm.formState.errors.confirmPassword)}
+              {...changePasswordForm.register('confirmPassword')}
+            />
+            {changePasswordForm.formState.errors.confirmPassword ? (
+              <p className='text-xs text-destructive'>
+                {changePasswordForm.formState.errors.confirmPassword.message}
+              </p>
+            ) : null}
+          </div>
+        </div>
+        <div className='flex justify-end'>
+          <Button type='submit' disabled={changePasswordForm.formState.isSubmitting}>
+            <KeyRound />
+            {changePasswordForm.formState.isSubmitting ? 'Changing...' : 'Change password'}
+          </Button>
+        </div>
+      </form>
+
+      <form
+        className='grid gap-4 rounded-md border bg-card p-4'
+        onSubmit={passwordForm.handleSubmit(onPasswordSubmit)}
+      >
+        <div>
+          <h2 className='text-base font-semibold tracking-normal'>Sign-in password</h2>
+          <p className='mt-1 text-sm text-muted-foreground'>
+            Set a password so this account can sign in with email and password as well as Google.
+          </p>
+        </div>
+        <div className='grid gap-4 sm:grid-cols-2'>
+          <div className='space-y-2'>
+            <Label htmlFor='signInPassword'>Password</Label>
+            <PasswordInput
+              id='signInPassword'
+              autoComplete='new-password'
+              aria-invalid={Boolean(passwordForm.formState.errors.password)}
+              {...passwordForm.register('password')}
+            />
+            {passwordForm.formState.errors.password ? (
+              <p className='text-xs text-destructive'>
+                {passwordForm.formState.errors.password.message}
+              </p>
+            ) : null}
+          </div>
+          <div className='space-y-2'>
+            <Label htmlFor='confirmSignInPassword'>Confirm password</Label>
+            <PasswordInput
+              id='confirmSignInPassword'
+              autoComplete='new-password'
+              aria-invalid={Boolean(passwordForm.formState.errors.confirmPassword)}
+              {...passwordForm.register('confirmPassword')}
+            />
+            {passwordForm.formState.errors.confirmPassword ? (
+              <p className='text-xs text-destructive'>
+                {passwordForm.formState.errors.confirmPassword.message}
+              </p>
+            ) : null}
+          </div>
+        </div>
+        <div className='flex justify-end'>
+          <Button type='submit' disabled={setPasswordMutation.isLoading}>
+            <KeyRound />
+            {setPasswordMutation.isLoading ? 'Saving...' : 'Set password'}
           </Button>
         </div>
       </form>

@@ -3,6 +3,7 @@ import type {
   EmailDeliveryStatistics,
   EmailTracking,
   ManagedUser,
+  Permission,
   ResendEmailResult,
   UserProfile,
 } from '@/lib/types'
@@ -22,6 +23,36 @@ export type UpdateUserProfileInput = {
   avatarKey?: string | null
 }
 
+export type SetOwnPasswordInput = {
+  password: string
+}
+
+export type ResetManagedUserPasswordInput = {
+  password: string
+}
+
+export type CreateManagedUserInput = {
+  username: string
+  email: string
+  password: string
+  name?: string
+  group: 'customer' | 'manager' | 'admin'
+  permissions?: Permission[]
+}
+
+export type UpdateManagedUserInput = {
+  email?: string
+  name?: string
+  enabled?: boolean
+}
+
+export type UserAccessRecord = {
+  userId: string
+  permissions: Permission[]
+  createdAt: string
+  updatedAt: string
+}
+
 export async function getOwnProfile(): Promise<UserProfile> {
   const response = await apiClient.get<UserProfile>('/users/me/profile')
   return response.data
@@ -32,9 +63,47 @@ export async function updateOwnProfile(input: UpdateUserProfileInput): Promise<U
   return response.data
 }
 
+export async function setOwnPassword(input: SetOwnPasswordInput): Promise<void> {
+  await apiClient.post('/users/me/password', input)
+}
+
 export async function findAllUsers(): Promise<ManagedUser[]> {
   const response = await apiClient.get<ManagedUser[]>('/users')
   return response.data
+}
+
+export async function createManagedUser(input: CreateManagedUserInput): Promise<ManagedUser> {
+  const response = await apiClient.post<ManagedUser>('/users', input)
+  return response.data
+}
+
+export async function updateManagedUser(
+  userId: string,
+  input: UpdateManagedUserInput,
+): Promise<ManagedUser> {
+  const response = await apiClient.patch<ManagedUser>(`/users/${userId}`, input)
+  return response.data
+}
+
+export async function updateUserPermissions(
+  userId: string,
+  permissions: Permission[],
+): Promise<UserAccessRecord> {
+  const response = await apiClient.patch<UserAccessRecord>(`/users/${userId}/permissions`, {
+    permissions,
+  })
+  return response.data
+}
+
+export async function resetManagedUserPassword(
+  userId: string,
+  input: ResetManagedUserPasswordInput,
+): Promise<void> {
+  await apiClient.patch(`/users/${userId}/password`, input)
+}
+
+export async function disableManagedUser(userId: string): Promise<void> {
+  await apiClient.delete(`/users/${userId}`)
 }
 
 export async function getUserEmailStatistics(): Promise<EmailDeliveryStatistics> {
