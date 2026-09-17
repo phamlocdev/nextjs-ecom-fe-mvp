@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { Globe, UserPlus } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
-import { redirectToGoogle, signUpWithEmail } from '@/lib/auth'
+import { redirectToGoogle, signUpWithEmail, storePendingSignUpCredentials } from '@/lib/auth'
 import { signUpSchema, type SignUpInput, type SignUpValues } from '@/lib/schemas'
 import { PasswordInput } from '@/components/auth/password-input'
 import { Button } from '@/components/ui/button'
@@ -32,6 +32,10 @@ export default function SignUpPage() {
       await signUpWithEmail({
         username: values.username,
         email: values.email,
+        password: values.password,
+      })
+      storePendingSignUpCredentials({
+        username: values.username,
         password: values.password,
       })
       toast.success('Confirmation code sent')

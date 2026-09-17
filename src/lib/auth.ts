@@ -7,6 +7,7 @@ import {
   confirmSignUp,
   fetchAuthSession,
   getCurrentUser,
+  resendSignUpCode,
   resetPassword,
   signIn,
   signInWithRedirect,
@@ -41,6 +42,10 @@ export type SignInResult =
       status: 'signed-in'
     }
   | {
+      status: 'confirm-sign-up'
+      username: string
+    }
+  | {
       status: 'new-password-required'
       username: string
     }
@@ -63,6 +68,16 @@ export type SignUpInput = {
 export type ConfirmSignUpInput = {
   username: string
   confirmationCode: string
+}
+
+export type PendingSignUpCredentials = {
+  username: string
+  password: string
+}
+
+export type AuthErrorToast = {
+  message: string
+  description?: string
 }
 
 export type ForgotPasswordInput = {
@@ -89,6 +104,8 @@ type OAuthTokenResponse = {
 }
 
 const hostedUiStorageKey = 'localstack-hosted-ui'
+const hostedUiAuthErrorToastKey = 'hosted-ui-auth-error-toast'
+const pendingSignUpCredentialsKey = 'pending-sign-up-credentials'
 
 export function configureAmplify(): void {
   if (configured || typeof window === 'undefined') {
@@ -209,6 +226,13 @@ export async function signInWithPassword(input: SignInInput): Promise<SignInResu
     }
   }
 
+  if (result.nextStep.signInStep === 'CONFIRM_SIGN_UP') {
+    return {
+      status: 'confirm-sign-up',
+      username: input.username,
+    }
+  }
+
   throw new Error('This account requires an unsupported sign-in challenge.')
 }
 
@@ -240,6 +264,11 @@ export async function signUpWithEmail(input: SignUpInput): Promise<void> {
       },
     },
   })
+}
+
+export async function resendUserSignUpCode(username: string): Promise<void> {
+  configureAmplify()
+  await resendSignUpCode({ username })
 }
 
 export async function confirmUserSignUp(input: ConfirmSignUpInput): Promise<void> {
@@ -289,6 +318,83 @@ export async function redirectToGoogle(): Promise<void> {
 export async function signOutCurrentUser(): Promise<void> {
   configureAmplify()
   await signOut()
+}
+
+export function storePendingSignUpCredentials(input: PendingSignUpCredentials): void {
+  if (typeof window === 'undefined') {
+    return
+  }
+
+  sessionStorage.setItem(pendingSignUpCredentialsKey, JSON.stringify(input))
+}
+
+export function readPendingSignUpCredentials(
+  username: string,
+): PendingSignUpCredentials | undefined {
+  if (typeof window === 'undefined') {
+    return undefined
+  }
+
+  const value = sessionStorage.getItem(pendingSignUpCredentialsKey)
+  if (!value) {
+    return undefined
+  }
+
+  try {
+    const credentials = JSON.parse(value) as PendingSignUpCredentials
+    return credentials.username === username ? credentials : undefined
+  } catch {
+    clearPendingSignUpCredentials()
+    return undefined
+  }
+}
+
+export function clearPendingSignUpCredentials(): void {
+  if (typeof window === 'undefined') {
+    return
+  }
+
+  sessionStorage.removeItem(pendingSignUpCredentialsKey)
+}
+
+export function getHostedUiRedirectError(url: string): Error | null {
+  const currentUrl = new URL(url)
+  const error = currentUrl.searchParams.get('error')
+  const errorDescription = currentUrl.searchParams.get('error_description')
+
+  if (!error && !errorDescription) {
+    return null
+  }
+
+  return new Error(errorDescription || error || 'Unable to complete hosted login')
+}
+
+export function storeHostedUiAuthErrorToast(error: unknown): void {
+  if (typeof window === 'undefined') {
+    return
+  }
+
+  sessionStorage.setItem(hostedUiAuthErrorToastKey, JSON.stringify(toAuthErrorToast(error)))
+}
+
+export function readAndClearHostedUiAuthErrorToast(): AuthErrorToast | null {
+  if (typeof window === 'undefined') {
+    return null
+  }
+
+  const value = sessionStorage.getItem(hostedUiAuthErrorToastKey)
+  if (!value) {
+    return null
+  }
+
+  sessionStorage.removeItem(hostedUiAuthErrorToastKey)
+
+  try {
+    const toast = JSON.parse(value) as AuthErrorToast
+    return toast.message ? toast : null
+  } catch {
+    return null
+  }
 }
 
 export async function completeHostedUiCallback(url: string): Promise<boolean> {
@@ -488,4 +594,38 @@ async function readOAuthError(response: Response): Promise<string> {
   } catch {
     return 'Unable to complete hosted login'
   }
+}
+
+function toAuthErrorToast(error: unknown): AuthErrorToast {
+  const message = normalizeAuthErrorMessage(error)
+
+  if (message.includes('AUTH_DUPLICATE_EMAIL_UNCONFIRMED')) {
+    return {
+      message: 'This email is already registered but not confirmed.',
+      description: 'Please confirm your account or request a new confirmation code.',
+    }
+  }
+
+  if (
+    message.includes('AUTH_DUPLICATE_EMAIL_CONFIRMED') ||
+    message.includes('An account with this email already exists')
+  ) {
+    return {
+      message: 'An account with this email already exists.',
+      description: 'Please sign in with your email and password, or reset your password.',
+    }
+  }
+
+  return {
+    message: 'Unable to finish login',
+    description: 'Please try again.',
+  }
+}
+
+function normalizeAuthErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message
+  }
+
+  return typeof error === 'string' ? error : ''
 }

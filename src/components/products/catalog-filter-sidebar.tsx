@@ -31,7 +31,7 @@ export function CatalogFilterSidebar({
   }
 
   return (
-    <aside className='space-y-5 rounded-md border bg-card p-4'>
+    <aside className='space-y-5 rounded-md border bg-card p-4 lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto'>
       <div className='flex items-center justify-between gap-3'>
         <div>
           <h2 className='text-base font-semibold'>Filters</h2>

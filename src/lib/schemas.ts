@@ -116,7 +116,7 @@ export const signUpSchema = z
   })
 
 export const confirmSignUpSchema = z.object({
-  username: usernameSchema,
+  username: z.string().trim().min(1, 'Email or username is required'),
   confirmationCode: z.string().trim().min(1, 'Confirmation code is required'),
 })
 

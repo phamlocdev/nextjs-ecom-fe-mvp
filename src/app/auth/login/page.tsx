@@ -1,13 +1,19 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Globe, KeyRound, LogIn } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
-import { completeNewPasswordChallenge, redirectToGoogle, signInWithPassword } from '@/lib/auth'
+import {
+  completeNewPasswordChallenge,
+  readAndClearHostedUiAuthErrorToast,
+  redirectToGoogle,
+  signInWithPassword,
+  storePendingSignUpCredentials,
+} from '@/lib/auth'
 import { recordLoginContext } from '@/lib/api/users'
 import {
   setSignInPasswordSchema,
@@ -44,6 +50,15 @@ export default function LoginPage() {
   })
   const isPending = form.formState.isSubmitting || newPasswordForm.formState.isSubmitting
 
+  useEffect(() => {
+    const authErrorToast = readAndClearHostedUiAuthErrorToast()
+    if (authErrorToast) {
+      toast.error(authErrorToast.message, {
+        description: () => <div className='text-black'>{authErrorToast.description}</div>,
+      })
+    }
+  }, [])
+
   async function handleSubmit(values: SignInValues) {
     try {
       const result = await signInWithPassword(values)
@@ -51,6 +66,18 @@ export default function LoginPage() {
         setNewPasswordUsername(result.username)
         newPasswordForm.reset({ password: '', confirmPassword: '' })
         toast.info('Please set a new password to finish signing in.')
+        return
+      }
+
+      if (result.status === 'confirm-sign-up') {
+        storePendingSignUpCredentials({
+          username: result.username,
+          password: values.password,
+        })
+        toast.info('Confirm your account to finish signing in.')
+        router.push(
+          `/auth/confirm?username=${encodeURIComponent(result.username)}&next=${encodeURIComponent(next)}`,
+        )
         return
       }
 

@@ -5,6 +5,7 @@ export type OrderStatus =
 export type PaymentStatus = 'NOT_STARTED' | 'PROCESSING' | 'PAID' | 'FAILED'
 export type InventoryStockStatus = 'IN_STOCK' | 'LOW_STOCK' | 'OUT_OF_STOCK'
 export type UserAccountStatus = 'ACTIVE' | 'SUSPENDED' | 'PENDING_APPROVAL' | 'DELETED'
+export type UserPasswordStatus = 'REQUIRED' | 'SET'
 export type EmailDeliveryStatus =
   'PENDING' | 'SENT' | 'DELIVERED' | 'BOUNCED' | 'COMPLAINED' | 'REJECTED' | 'FAILED' | 'SKIPPED'
 export type EmailType =
@@ -76,6 +77,7 @@ export type UserProfile = {
   avatarKey?: string
   avatarReadUrl?: string
   avatarReadUrlExpiresInSeconds?: number
+  passwordStatus: UserPasswordStatus
   createdAt: string
   updatedAt: string
 }
@@ -94,6 +96,7 @@ export type ManagedUser = {
   createdAt?: string
   updatedAt?: string
   welcomeEmailTracking?: EmailDeliverySummary
+  passwordStatus?: UserPasswordStatus
 }
 
 export type UserLoginAudit = {
