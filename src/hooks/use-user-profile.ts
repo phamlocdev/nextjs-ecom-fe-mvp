@@ -5,7 +5,9 @@ import {
   disableManagedUser,
   findAllUsers,
   getUserEmailStatistics,
+  getUserLoginAudit,
   getOwnProfile,
+  recordLoginContext,
   resendFailedWelcomeEmail,
   resetManagedUserPassword,
   setOwnPassword,
@@ -105,6 +107,25 @@ export function useResendFailedWelcomeEmailMutation() {
           queryClient.invalidateQueries(USER_PROFILE_QUERY_KEYS.emailStatistics()),
         ])
       },
+    },
+  )
+}
+
+export function useRecordLoginContextMutation() {
+  return useMutation(() => recordLoginContext())
+}
+
+export function useUserLoginAuditQuery(input: {
+  filter: 'userId' | 'username' | 'email'
+  value: string
+  limit?: number
+  enabled?: boolean
+}) {
+  return useQuery(
+    USER_PROFILE_QUERY_KEYS.loginAudit(input.filter, input.value),
+    () => getUserLoginAudit(input),
+    {
+      enabled: input.enabled ?? Boolean(input.value),
     },
   )
 }

@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
 import { completeHostedUiCallback } from '@/lib/auth'
+import { recordLoginContext } from '@/lib/api/users'
 import { useAuthStore } from '@/store/auth-store'
 
 export default function AuthCallbackPage() {
@@ -18,6 +19,7 @@ export default function AuthCallbackPage() {
       .then(() => hydrate(true))
       .then((session) => {
         if (session.isAuthenticated) {
+          void recordLoginContext().catch(() => undefined)
           router.replace(next)
           router.refresh()
           return

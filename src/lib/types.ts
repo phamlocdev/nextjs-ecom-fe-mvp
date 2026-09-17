@@ -4,9 +4,22 @@ export type OrderStatus =
   'PENDING' | 'RESERVED' | 'CONFIRMED' | 'SHIPPED' | 'CANCELLED' | 'FAILED' | 'EXPIRED'
 export type PaymentStatus = 'NOT_STARTED' | 'PROCESSING' | 'PAID' | 'FAILED'
 export type InventoryStockStatus = 'IN_STOCK' | 'LOW_STOCK' | 'OUT_OF_STOCK'
+export type UserAccountStatus = 'ACTIVE' | 'SUSPENDED' | 'PENDING_APPROVAL' | 'DELETED'
 export type EmailDeliveryStatus =
   'PENDING' | 'SENT' | 'DELIVERED' | 'BOUNCED' | 'COMPLAINED' | 'REJECTED' | 'FAILED' | 'SKIPPED'
-export type EmailType = 'ORDER_CONFIRMATION' | 'WELCOME_NEW_CUSTOMER' | 'SHIPPED_ORDER_NOTIFICATION'
+export type EmailType =
+  | 'ORDER_CONFIRMATION'
+  | 'WELCOME_NEW_CUSTOMER'
+  | 'SHIPPED_ORDER_NOTIFICATION'
+  | 'CANCELLED_ORDER_NOTIFICATION'
+  | 'COGNITO_SIGN_UP'
+  | 'COGNITO_RESEND_CODE'
+  | 'COGNITO_FORGOT_PASSWORD'
+  | 'COGNITO_ADMIN_CREATE_USER'
+  | 'COGNITO_UPDATE_USER_ATTRIBUTE'
+  | 'COGNITO_VERIFY_USER_ATTRIBUTE'
+  | 'COGNITO_AUTHENTICATION'
+  | 'COGNITO_ACCOUNT_TAKEOVER_NOTIFICATION'
 export type EmailContextType = 'ORDER' | 'USER'
 export type Permission =
   | 'products:read'
@@ -30,6 +43,7 @@ export type Permission =
   | 'users:permissions:update'
   | 'users:email:read'
   | 'users:email:resend'
+  | 'users:login-audit:read'
 
 export type Product = {
   productId: string
@@ -70,6 +84,7 @@ export type ManagedUser = {
   username: string
   enabled: boolean
   status?: string
+  accountStatus?: UserAccountStatus
   name?: string
   sub?: string
   email?: string
@@ -79,6 +94,27 @@ export type ManagedUser = {
   createdAt?: string
   updatedAt?: string
   welcomeEmailTracking?: EmailDeliverySummary
+}
+
+export type UserLoginAudit = {
+  userId: string
+  loginAt: string
+  loginId: string
+  username?: string
+  email?: string
+  ipAddress?: string
+  userAgent?: string
+  userPoolId: string
+  clientId?: string
+  triggerSource: string
+  newDeviceUsed?: boolean
+  createdAt: string
+  expiresAt: number
+}
+
+export type UserLoginAuditQueryResult = {
+  items: UserLoginAudit[]
+  nextCursor: string | null
 }
 
 export type EmailDeliverySummary = {

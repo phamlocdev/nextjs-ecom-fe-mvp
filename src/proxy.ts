@@ -7,6 +7,7 @@ const adminRoutePermissions: Record<string, string> = {
   '/admin/inventories': 'inventories:read',
   '/admin/categories': 'categories:read',
   '/admin/orders': 'orders:read',
+  '/admin/users/login-audit': 'users:login-audit:read',
   '/admin/users': 'users:read',
 }
 const guestRoutes = [

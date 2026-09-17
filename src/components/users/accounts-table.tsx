@@ -93,7 +93,7 @@ export function AccountsTable({
                   </div>
                 </TableCell>
                 <TableCell className='text-sm text-muted-foreground'>
-                  {user.enabled ? (user.status ?? 'Enabled') : 'Disabled'}
+                  {user.enabled ? (user.accountStatus ?? user.status ?? 'Enabled') : 'Disabled'}
                 </TableCell>
                 <TableCell>
                   <div className='space-y-1'>

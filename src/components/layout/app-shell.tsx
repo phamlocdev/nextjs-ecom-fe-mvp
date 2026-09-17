@@ -6,6 +6,7 @@ import {
   Boxes,
   CreditCard,
   Layers3,
+  ListChecks,
   LogOut,
   Package,
   PanelLeftClose,
@@ -44,6 +45,12 @@ const navItems = [
   },
   { href: '/admin/orders', label: 'Orders', icon: CreditCard, permission: Permission.ORDERS_READ },
   { href: '/admin/users', label: 'Accounts', icon: Users, permission: Permission.USERS_READ },
+  {
+    href: '/admin/users/login-audit',
+    label: 'Login audit',
+    icon: ListChecks,
+    permission: Permission.USERS_LOGIN_AUDIT_READ,
+  },
   { href: '/admin/profile', label: 'Profile', icon: UserCircle },
 ]
 

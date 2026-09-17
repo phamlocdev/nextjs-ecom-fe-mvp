@@ -8,6 +8,7 @@ import { Globe, KeyRound, LogIn } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { completeNewPasswordChallenge, redirectToGoogle, signInWithPassword } from '@/lib/auth'
+import { recordLoginContext } from '@/lib/api/users'
 import {
   setSignInPasswordSchema,
   signInSchema,
@@ -54,6 +55,7 @@ export default function LoginPage() {
       }
 
       await hydrate(true)
+      await recordLoginContextBestEffort()
       router.push(next)
       router.refresh()
     } catch (error) {
@@ -65,6 +67,7 @@ export default function LoginPage() {
     try {
       await completeNewPasswordChallenge({ newPassword: values.password })
       await hydrate(true)
+      await recordLoginContextBestEffort()
       toast.success('Password updated')
       router.push(next)
       router.refresh()
@@ -183,6 +186,14 @@ export default function LoginPage() {
       )}
     </AuthPageFrame>
   )
+}
+
+async function recordLoginContextBestEffort(): Promise<void> {
+  try {
+    await recordLoginContext()
+  } catch {
+    // Login itself succeeded; context tracking can be retried on a future sign-in.
+  }
 }
 
 function AuthPageFrame({ title, children }: { title: string; children: React.ReactNode }) {

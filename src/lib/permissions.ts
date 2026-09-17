@@ -20,6 +20,7 @@ export const Permission = {
   USERS_PERMISSIONS_UPDATE: 'users:permissions:update',
   USERS_EMAIL_READ: 'users:email:read',
   USERS_EMAIL_RESEND: 'users:email:resend',
+  USERS_LOGIN_AUDIT_READ: 'users:login-audit:read',
 } as const
 
 export type Permission = (typeof Permission)[keyof typeof Permission]
@@ -48,6 +49,7 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   [Permission.USERS_PERMISSIONS_UPDATE]: 'Update account permissions',
   [Permission.USERS_EMAIL_READ]: 'Read account email tracking',
   [Permission.USERS_EMAIL_RESEND]: 'Resend welcome emails',
+  [Permission.USERS_LOGIN_AUDIT_READ]: 'Read account login audit',
 }
 
 export function readPermissions(claims: Record<string, unknown> | null): Permission[] {
