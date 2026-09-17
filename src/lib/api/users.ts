@@ -5,6 +5,7 @@ import type {
   ManagedUser,
   Permission,
   ResendEmailResult,
+  UserLoginAuditQueryResult,
   UserProfile,
 } from '@/lib/types'
 
@@ -16,6 +17,8 @@ export const USER_PROFILE_QUERY_KEYS = {
   emailStatistics: () => [...USER_PROFILE_QUERY_KEYS.all, 'email-statistics'] as const,
   emailTracking: (userId: string) =>
     [...USER_PROFILE_QUERY_KEYS.all, 'email-tracking', userId] as const,
+  loginAudit: (filter: string, value: string) =>
+    [...USER_PROFILE_QUERY_KEYS.all, 'login-audit', filter, value] as const,
 }
 
 export type UpdateUserProfileInput = {
@@ -44,6 +47,7 @@ export type UpdateManagedUserInput = {
   email?: string
   name?: string
   enabled?: boolean
+  status?: 'ACTIVE' | 'SUSPENDED' | 'PENDING_APPROVAL' | 'DELETED'
 }
 
 export type UserAccessRecord = {
@@ -126,5 +130,25 @@ export async function resendFailedWelcomeEmail(
     `/users/${userId}/emails/welcome-new-customer/resend-failed`,
     { recipientEmail },
   )
+  return response.data
+}
+
+export async function recordLoginContext(): Promise<void> {
+  await apiClient.post('/users/me/login-context')
+}
+
+export async function getUserLoginAudit(input: {
+  filter: 'userId' | 'username' | 'email'
+  value: string
+  limit?: number
+  cursor?: string
+}): Promise<UserLoginAuditQueryResult> {
+  const response = await apiClient.get<UserLoginAuditQueryResult>('/users/login-audit', {
+    params: {
+      [input.filter]: input.value,
+      limit: input.limit,
+      cursor: input.cursor,
+    },
+  })
   return response.data
 }

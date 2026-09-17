@@ -5,22 +5,15 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { ImagePlus, KeyRound, Save, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
-import {
-  useSetOwnPasswordMutation,
-  useUpdateUserProfileMutation,
-  useUserProfileQuery,
-} from '@/hooks/use-user-profile'
+import { useUpdateUserProfileMutation, useUserProfileQuery } from '@/hooks/use-user-profile'
 import { apiErrorDescription, toApiClientError } from '@/lib/api/errors'
 import { presignUpload, uploadWithPresignedPost } from '@/lib/api/upload'
 import { changeOwnPassword } from '@/lib/auth'
 import {
   changePasswordSchema,
-  setSignInPasswordSchema,
   userProfileFormSchema,
   type ChangePasswordInput,
   type ChangePasswordValues,
-  type SetSignInPasswordInput,
-  type SetSignInPasswordValues,
   type UserProfileFormInput,
   type UserProfileFormValues,
 } from '@/lib/schemas'
@@ -35,7 +28,6 @@ export function UserProfileForm({ title }: { title: string }) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const profileResult = useUserProfileQuery()
   const updateProfileMutation = useUpdateUserProfileMutation()
-  const setPasswordMutation = useSetOwnPasswordMutation()
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null)
   const [removeAvatar, setRemoveAvatar] = useState(false)
@@ -47,10 +39,6 @@ export function UserProfileForm({ title }: { title: string }) {
   const form = useForm<UserProfileFormInput, unknown, UserProfileFormValues>({
     resolver: zodResolver(userProfileFormSchema),
     defaultValues: { name: '' },
-  })
-  const passwordForm = useForm<SetSignInPasswordInput, unknown, SetSignInPasswordValues>({
-    resolver: zodResolver(setSignInPasswordSchema),
-    defaultValues: { password: '', confirmPassword: '' },
   })
   const changePasswordForm = useForm<ChangePasswordInput, unknown, ChangePasswordValues>({
     resolver: zodResolver(changePasswordSchema),
@@ -131,16 +119,6 @@ export function UserProfileForm({ title }: { title: string }) {
       toast.error(toApiClientError(error).message, { description: apiErrorDescription(error) })
     } finally {
       setIsUploading(false)
-    }
-  }
-
-  async function onPasswordSubmit(values: SetSignInPasswordValues) {
-    try {
-      await setPasswordMutation.mutateAsync({ password: values.password })
-      passwordForm.reset({ password: '', confirmPassword: '' })
-      toast.success('Sign-in password updated')
-    } catch (error) {
-      toast.error(toApiClientError(error).message, { description: apiErrorDescription(error) })
     }
   }
 
@@ -311,54 +289,6 @@ export function UserProfileForm({ title }: { title: string }) {
           <Button type='submit' disabled={changePasswordForm.formState.isSubmitting}>
             <KeyRound />
             {changePasswordForm.formState.isSubmitting ? 'Changing...' : 'Change password'}
-          </Button>
-        </div>
-      </form>
-
-      <form
-        className='grid gap-4 rounded-md border bg-card p-4'
-        onSubmit={passwordForm.handleSubmit(onPasswordSubmit)}
-      >
-        <div>
-          <h2 className='text-base font-semibold tracking-normal'>Sign-in password</h2>
-          <p className='mt-1 text-sm text-muted-foreground'>
-            Set a password so this account can sign in with email and password as well as Google.
-          </p>
-        </div>
-        <div className='grid gap-4 sm:grid-cols-2'>
-          <div className='space-y-2'>
-            <Label htmlFor='signInPassword'>Password</Label>
-            <PasswordInput
-              id='signInPassword'
-              autoComplete='new-password'
-              aria-invalid={Boolean(passwordForm.formState.errors.password)}
-              {...passwordForm.register('password')}
-            />
-            {passwordForm.formState.errors.password ? (
-              <p className='text-xs text-destructive'>
-                {passwordForm.formState.errors.password.message}
-              </p>
-            ) : null}
-          </div>
-          <div className='space-y-2'>
-            <Label htmlFor='confirmSignInPassword'>Confirm password</Label>
-            <PasswordInput
-              id='confirmSignInPassword'
-              autoComplete='new-password'
-              aria-invalid={Boolean(passwordForm.formState.errors.confirmPassword)}
-              {...passwordForm.register('confirmPassword')}
-            />
-            {passwordForm.formState.errors.confirmPassword ? (
-              <p className='text-xs text-destructive'>
-                {passwordForm.formState.errors.confirmPassword.message}
-              </p>
-            ) : null}
-          </div>
-        </div>
-        <div className='flex justify-end'>
-          <Button type='submit' disabled={setPasswordMutation.isLoading}>
-            <KeyRound />
-            {setPasswordMutation.isLoading ? 'Saving...' : 'Set password'}
           </Button>
         </div>
       </form>

@@ -1,11 +1,13 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import {
   Boxes,
   CreditCard,
   Layers3,
+  ListChecks,
   LogOut,
   Package,
   PanelLeftClose,
@@ -17,11 +19,13 @@ import {
   Users,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { useUserProfileQuery } from '@/hooks/use-user-profile'
 import { getClaimString, useAuthStore } from '@/store/auth-store'
 import { Permission, hasPermission } from '@/lib/permissions'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { useState } from 'react'
+
+const setPasswordRoute = '/auth/set-password'
 
 const navItems = [
   {
@@ -44,6 +48,12 @@ const navItems = [
   },
   { href: '/admin/orders', label: 'Orders', icon: CreditCard, permission: Permission.ORDERS_READ },
   { href: '/admin/users', label: 'Accounts', icon: Users, permission: Permission.USERS_READ },
+  {
+    href: '/admin/users/login-audit',
+    label: 'Login audit',
+    icon: ListChecks,
+    permission: Permission.USERS_LOGIN_AUDIT_READ,
+  },
   { href: '/admin/profile', label: 'Profile', icon: UserCircle },
 ]
 
@@ -58,6 +68,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
   const { accessTokenClaims, idTokenClaims, isAuthenticated, signOut } = useAuthStore()
+  const profileResult = useUserProfileQuery({
+    enabled: isAuthenticated && pathname !== '/auth/callback',
+  })
   const email = getClaimString(idTokenClaims, 'email')
   const username = getClaimString(idTokenClaims, 'cognito:username')
   const displayName = email ?? username
@@ -67,6 +80,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const visibleNavItems = navItems.filter(
     (item) => !item.permission || hasPermission(accessTokenClaims, item.permission),
   )
+
+  useEffect(() => {
+    if (
+      isAuthenticated &&
+      profileResult.data?.passwordStatus === 'REQUIRED' &&
+      pathname !== setPasswordRoute &&
+      pathname !== '/auth/callback'
+    ) {
+      router.replace(`${setPasswordRoute}?next=${encodeURIComponent(pathname)}`)
+    }
+  }, [isAuthenticated, pathname, profileResult.data?.passwordStatus, router])
 
   async function handleSignOut() {
     try {

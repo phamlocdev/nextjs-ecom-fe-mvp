@@ -5,7 +5,9 @@ import {
   disableManagedUser,
   findAllUsers,
   getUserEmailStatistics,
+  getUserLoginAudit,
   getOwnProfile,
+  recordLoginContext,
   resendFailedWelcomeEmail,
   resetManagedUserPassword,
   setOwnPassword,
@@ -18,8 +20,10 @@ import {
 } from '@/lib/api/users'
 import type { Permission } from '@/lib/types'
 
-export function useUserProfileQuery() {
-  return useQuery(USER_PROFILE_QUERY_KEYS.profile(), getOwnProfile)
+export function useUserProfileQuery(options?: { enabled?: boolean }) {
+  return useQuery(USER_PROFILE_QUERY_KEYS.profile(), getOwnProfile, {
+    enabled: options?.enabled ?? true,
+  })
 }
 
 export function useUpdateUserProfileMutation() {
@@ -33,7 +37,13 @@ export function useUpdateUserProfileMutation() {
 }
 
 export function useSetOwnPasswordMutation() {
-  return useMutation((input: SetOwnPasswordInput) => setOwnPassword(input))
+  const queryClient = useQueryClient()
+
+  return useMutation((input: SetOwnPasswordInput) => setOwnPassword(input), {
+    onSuccess: () => {
+      void queryClient.invalidateQueries(USER_PROFILE_QUERY_KEYS.profile())
+    },
+  })
 }
 
 export function useUsersQuery() {
@@ -105,6 +115,25 @@ export function useResendFailedWelcomeEmailMutation() {
           queryClient.invalidateQueries(USER_PROFILE_QUERY_KEYS.emailStatistics()),
         ])
       },
+    },
+  )
+}
+
+export function useRecordLoginContextMutation() {
+  return useMutation(() => recordLoginContext())
+}
+
+export function useUserLoginAuditQuery(input: {
+  filter: 'userId' | 'username' | 'email'
+  value: string
+  limit?: number
+  enabled?: boolean
+}) {
+  return useQuery(
+    USER_PROFILE_QUERY_KEYS.loginAudit(input.filter, input.value),
+    () => getUserLoginAudit(input),
+    {
+      enabled: input.enabled ?? Boolean(input.value),
     },
   )
 }

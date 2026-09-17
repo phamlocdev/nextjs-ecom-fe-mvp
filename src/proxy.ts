@@ -1,12 +1,14 @@
 import { NextResponse, type NextRequest } from 'next/server'
 
-const protectedRoutes = ['/customer/profile', '/cart', '/checkout', '/orders']
+const setPasswordRoute = '/auth/set-password'
+const protectedRoutes = [setPasswordRoute, '/customer/profile', '/cart', '/checkout', '/orders']
 const adminRoutes = ['/admin']
 const adminRoutePermissions: Record<string, string> = {
   '/admin/products': 'products:read',
   '/admin/inventories': 'inventories:read',
   '/admin/categories': 'categories:read',
   '/admin/orders': 'orders:read',
+  '/admin/users/login-audit': 'users:login-audit:read',
   '/admin/users': 'users:read',
 }
 const guestRoutes = [
@@ -37,6 +39,17 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(loginUrl)
   }
 
+  if (
+    isAuthenticated &&
+    requiresPasswordSetup(authPayloads) &&
+    pathname !== setPasswordRoute &&
+    pathname !== '/auth/callback'
+  ) {
+    const setPasswordUrl = new URL(setPasswordRoute, request.url)
+    setPasswordUrl.searchParams.set('next', `${pathname}${request.nextUrl.search}`)
+    return NextResponse.redirect(setPasswordUrl)
+  }
+
   if (isAdminRoute && !hasAdminRouteAccess(pathname, authPayloads)) {
     return NextResponse.redirect(new URL('/', request.url))
   }
@@ -58,6 +71,7 @@ type JwtPayload = {
   'custom:role'?: string
   'cognito:groups'?: string[]
   'app:permissions'?: string[]
+  'app:password_status'?: string
 }
 
 function getValidCognitoTokenPayloads(request: NextRequest): JwtPayload[] {
@@ -98,6 +112,10 @@ function hasPermission(payloads: JwtPayload[], permission: string): boolean {
     const permissions = payload['app:permissions']
     return Array.isArray(permissions) && permissions.includes(permission)
   })
+}
+
+function requiresPasswordSetup(payloads: JwtPayload[]): boolean {
+  return payloads.some((payload) => payload['app:password_status'] === 'REQUIRED')
 }
 
 function decodeJwtPayload(token: string): JwtPayload | null {
