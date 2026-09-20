@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { Search, X } from 'lucide-react'
 import type { Category, ProductFilterParams, ProductStatus } from '@/lib/types'
 import { Button } from '@/components/ui/button'
@@ -14,6 +15,7 @@ import {
 } from '@/components/ui/select'
 
 const ANY_VALUE = '__any__'
+const SEARCH_DEBOUNCE_MS = 400
 
 type CatalogFilterSidebarProps = {
   categories: Category[]
@@ -26,6 +28,24 @@ export function CatalogFilterSidebar({
   filters,
   onFiltersChange,
 }: CatalogFilterSidebarProps) {
+  const [keyword, setKeyword] = useState(filters.q ?? '')
+
+  useEffect(() => {
+    setKeyword(filters.q ?? '')
+  }, [filters.q])
+
+  useEffect(() => {
+    if (keyword === (filters.q ?? '')) {
+      return
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      updateFilter({ ...filters, q: keyword })
+    }, SEARCH_DEBOUNCE_MS)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [filters, keyword])
+
   function updateFilter(nextFilters: ProductFilterParams): void {
     onFiltersChange(removeEmptyFilters(nextFilters))
   }
@@ -57,8 +77,8 @@ export function CatalogFilterSidebar({
             id='catalogSearch'
             className='pl-9'
             placeholder='Search products'
-            value={filters.q ?? ''}
-            onChange={(event) => updateFilter({ ...filters, q: event.target.value })}
+            value={keyword}
+            onChange={(event) => setKeyword(event.target.value)}
           />
         </div>
       </section>

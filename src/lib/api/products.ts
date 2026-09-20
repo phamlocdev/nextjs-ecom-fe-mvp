@@ -30,7 +30,8 @@ export async function createProduct(input: ProductFormValues): Promise<Product> 
 }
 
 export async function updateProduct(productId: string, input: ProductFormValues): Promise<Product> {
-  const response = await apiClient.patch<Product>(`/products/${productId}`, input)
+  const { availableQuantity: _availableQuantity, ...productInput } = input
+  const response = await apiClient.patch<Product>(`/products/${productId}`, productInput)
   return response.data
 }
 

@@ -46,6 +46,7 @@ const emptyProduct: ProductFormInput = {
   description: '',
   categoryId: '',
   price: 1,
+  availableQuantity: 0,
   imageUrl: undefined,
   images: undefined,
   status: 'ACTIVE',
@@ -85,6 +86,7 @@ export function ProductFormPage({
             description: product.description,
             categoryId: product.categoryId,
             price: product.price,
+            availableQuantity: 0,
             imageUrl: product.imageUrl,
             images: toProductImagePayload(product),
             status: product.status,
@@ -242,6 +244,25 @@ export function ProductFormPage({
                 <p className='text-xs text-destructive'>{form.formState.errors.price.message}</p>
               ) : null}
             </div>
+
+            {!isEdit ? (
+              <div className='space-y-2'>
+                <Label htmlFor='availableQuantity'>Available quantity</Label>
+                <Input
+                  id='availableQuantity'
+                  min={0}
+                  step={1}
+                  type='number'
+                  aria-invalid={Boolean(form.formState.errors.availableQuantity)}
+                  {...form.register('availableQuantity', { valueAsNumber: true })}
+                />
+                {form.formState.errors.availableQuantity ? (
+                  <p className='text-xs text-destructive'>
+                    {form.formState.errors.availableQuantity.message}
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
 
             <div className='space-y-2'>
               <Label>Category</Label>
