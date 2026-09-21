@@ -27,6 +27,7 @@ export default function CheckoutPage() {
   const cartResult = useCartQuery(activeCartId, isAuthenticated && isCartHydrated)
   const placeOrderMutation = usePlaceOrderMutation()
   const cartError = cartResult.error ? toApiClientError(cartResult.error) : null
+  const cartStatus = cartResult.data?.status
   const {
     items,
     totalAmount,
@@ -35,10 +36,10 @@ export default function CheckoutPage() {
   } = useCartProductDetails(cartResult.data)
 
   useEffect(() => {
-    if (cartError?.statusCode === 404) {
+    if (cartError?.statusCode === 404 || (cartStatus && cartStatus !== 'ACTIVE')) {
       clearActiveCart()
     }
-  }, [cartError?.statusCode, clearActiveCart])
+  }, [cartError?.statusCode, cartStatus, clearActiveCart])
 
   if (isHydrating || !isCartHydrated) {
     return <CheckoutSkeleton />
@@ -49,6 +50,10 @@ export default function CheckoutPage() {
   }
 
   if (!activeCartId) {
+    return <CheckoutEmptyState />
+  }
+
+  if (cartStatus && cartStatus !== 'ACTIVE') {
     return <CheckoutEmptyState />
   }
 
@@ -105,6 +110,7 @@ export default function CheckoutPage() {
             ? additionalReceivingEmails.emails
             : undefined,
       })
+      clearActiveCart()
       toast.success('Order request accepted. We are preparing your checkout.')
       router.push(`/orders/${encodeURIComponent(response.orderId)}`)
     } catch (error) {

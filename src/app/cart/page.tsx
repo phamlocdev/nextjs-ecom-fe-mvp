@@ -23,14 +23,15 @@ export default function CartPage() {
   const updateItemMutation = useUpdateCartItemMutation()
   const removeItemMutation = useRemoveCartItemMutation()
   const cartError = cartResult.error ? toApiClientError(cartResult.error) : null
+  const cartStatus = cartResult.data?.status
   const { items, totalAmount, isLoading: isProductsLoading, error: cartProductsError } =
     useCartProductDetails(cartResult.data)
 
   useEffect(() => {
-    if (cartError?.statusCode === 404) {
+    if (cartError?.statusCode === 404 || (cartStatus && cartStatus !== 'ACTIVE')) {
       clearActiveCart()
     }
-  }, [cartError?.statusCode, clearActiveCart])
+  }, [cartError?.statusCode, cartStatus, clearActiveCart])
 
   if (isHydrating || !isCartHydrated) {
     return <CartSkeleton />
@@ -41,6 +42,10 @@ export default function CartPage() {
   }
 
   if (!activeCartId) {
+    return <EmptyCartState />
+  }
+
+  if (cartStatus && cartStatus !== 'ACTIVE') {
     return <EmptyCartState />
   }
 

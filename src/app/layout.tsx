@@ -11,8 +11,8 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'DynamoDB MVP Storefront and Admin',
-  description: 'Customer catalog and admin console for the DynamoDB MVP project',
+  title: "PhuLoc's Ecommerce",
+  description: 'A modern e-commerce platform built with Next.js, AWS services',
 }
 
 export default function RootLayout({
