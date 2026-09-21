@@ -8,6 +8,7 @@ import {
   type AuthClaims,
   type AuthSessionSnapshot,
 } from '@/lib/auth'
+import { useCartStore } from '@/store/cart-store'
 
 type AuthStore = AuthSessionSnapshot & {
   isHydrating: boolean
@@ -28,6 +29,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
   clear: () => set({ ...emptyAuthSession(), isHydrating: false }),
   signOut: async () => {
     await signOutCurrentUser()
+    useCartStore.getState().clear()
     set({ ...emptyAuthSession(), isHydrating: false })
   },
 }))

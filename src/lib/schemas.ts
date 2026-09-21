@@ -27,6 +27,7 @@ export const productFormSchema = z.object({
   description: z.string().trim().min(1, 'Description is required').max(2000),
   categoryId: z.string().trim().min(1, 'Category is required').max(64),
   price: z.coerce.number().int('Price must be an integer VND amount').min(1),
+  availableQuantity: z.coerce.number().int('Quantity must be an integer').min(0).default(0),
   imageUrl: optionalUrl,
   images: z.array(productImageSchema).optional(),
   status: productStatusSchema.default('ACTIVE'),

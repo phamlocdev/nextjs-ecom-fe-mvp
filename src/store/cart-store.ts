@@ -3,6 +3,8 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
+const ACTIVE_CART_STORAGE_KEY = 'customer-active-cart'
+
 type CartStore = {
   activeCartId: string | null
   isHydrated: boolean
@@ -17,11 +19,16 @@ export const useCartStore = create<CartStore>()(
       activeCartId: null,
       isHydrated: false,
       setActiveCartId: (cartId) => set({ activeCartId: cartId }),
-      clear: () => set({ activeCartId: null }),
+      clear: () => {
+        set({ activeCartId: null })
+        if (typeof window !== 'undefined') {
+          window.localStorage.removeItem(ACTIVE_CART_STORAGE_KEY)
+        }
+      },
       markHydrated: () => set({ isHydrated: true }),
     }),
     {
-      name: 'customer-active-cart',
+      name: ACTIVE_CART_STORAGE_KEY,
       partialize: (state) => ({ activeCartId: state.activeCartId }),
       onRehydrateStorage: () => (state) => {
         state?.markHydrated()
