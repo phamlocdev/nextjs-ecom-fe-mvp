@@ -3,6 +3,7 @@ export const env = {
     'NEXT_PUBLIC_API_GATEWAY_BASE_URL',
     process.env.NEXT_PUBLIC_API_GATEWAY_BASE_URL,
   ),
+  mediaPublicBaseUrl: readOptionalEnv(process.env.NEXT_PUBLIC_MEDIA_PUBLIC_BASE_URL),
   cognitoRegion: readRequiredEnv(
     'NEXT_PUBLIC_COGNITO_REGION',
     process.env.NEXT_PUBLIC_COGNITO_REGION,
@@ -30,4 +31,9 @@ function readRequiredEnv(name: string, value: string | undefined): string {
     throw new Error(`Missing environment variable: ${name}`)
   }
   return value
+}
+
+function readOptionalEnv(value: string | undefined): string | undefined {
+  const normalized = value?.trim().replace(/\/+$/, '')
+  return normalized || undefined
 }

@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useParams, usePathname, useRouter } from 'next/navigation'
+import { notFound, useParams, usePathname, useRouter } from 'next/navigation'
 import { ArrowLeft, CheckCircle2, ShoppingCart, Zap } from 'lucide-react'
 import { toast } from 'sonner'
 import { useActiveCart } from '@/hooks/use-active-cart'
@@ -16,6 +16,7 @@ import { toApiClientError } from '@/lib/api/errors'
 import { formatDateTime, formatVnd } from '@/lib/format'
 import {
   getProductImageAlt,
+  getProductImagePublicSrc,
   getProductImageSrc,
   getPrimaryProductImage,
 } from '@/lib/product-images'
@@ -44,6 +45,10 @@ export function ProductDetailPage() {
     return <ProductDetailSkeleton />
   }
 
+  if (productError?.statusCode === 404) {
+    return notFound()
+  }
+
   if (productError) {
     return (
       <ResourceError
@@ -55,14 +60,7 @@ export function ProductDetailPage() {
   }
 
   if (!product) {
-    return (
-      <div className='rounded-md border bg-card p-10 text-center'>
-        <p className='font-medium'>Product not found</p>
-        <Link href='/' className={cn(buttonVariants({ variant: 'outline', className: 'mt-4' }))}>
-          Back to catalog
-        </Link>
-      </div>
-    )
+    return notFound()
   }
 
   const resolvedProduct = product
@@ -119,20 +117,24 @@ export function ProductDetailPage() {
           </div>
           {product.images && product.images.length > 1 ? (
             <div className='mt-3 grid grid-cols-4 gap-2'>
-              {product.images.map((image) => (
-                <div
-                  key={image.key}
-                  className='aspect-square overflow-hidden rounded-md border bg-muted'
-                >
-                  {image.readUrl ? (
-                    <img
-                      src={image.readUrl}
-                      alt={getProductImageAlt(product, image)}
-                      className='h-full w-full object-cover'
-                    />
-                  ) : null}
-                </div>
-              ))}
+              {product.images.map((image) => {
+                const thumbnailSrc = getProductImagePublicSrc(image)
+
+                return (
+                  <div
+                    key={image.key}
+                    className='aspect-square overflow-hidden rounded-md border bg-muted'
+                  >
+                    {thumbnailSrc ? (
+                      <img
+                        src={thumbnailSrc}
+                        alt={getProductImageAlt(product, image)}
+                        className='h-full w-full object-cover'
+                      />
+                    ) : null}
+                  </div>
+                )
+              })}
             </div>
           ) : null}
         </section>

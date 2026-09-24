@@ -13,7 +13,11 @@ import { apiErrorDescription, toApiClientError } from '@/lib/api/errors'
 import { presignUpload, uploadWithPresignedPost } from '@/lib/api/upload'
 import { productFormSchema, type ProductFormInput, type ProductFormValues } from '@/lib/schemas'
 import type { Product } from '@/lib/types'
-import { getPrimaryProductImage } from '@/lib/product-images'
+import {
+  getProductImageSrc,
+  getProductImagePublicSrc,
+  getPrimaryProductImage,
+} from '@/lib/product-images'
 import { cn } from '@/lib/utils'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -71,7 +75,7 @@ export function ProductFormPage({
   const isPending = createMutation.isLoading || updateMutation.isLoading || isUploading
   const categories = categoriesResult.data?.items ?? []
   const categoriesError = categoriesResult.error ? toApiClientError(categoriesResult.error) : null
-  const legacyImageUrl = product?.imageUrl
+  const legacyImageUrl = product ? getProductImageSrc(product) : undefined
 
   const form = useForm<ProductFormInput, unknown, ProductFormValues>({
     resolver: zodResolver(productFormSchema),
@@ -493,7 +497,7 @@ function toEditableImages(product: Product | undefined): EditableImage[] {
     product?.images?.map((image) => ({
       id: image.key,
       key: image.key,
-      previewUrl: image.readUrl,
+      previewUrl: getProductImagePublicSrc(image),
       isObjectUrl: false,
       altText: image.altText ?? '',
       isPrimary: image.isPrimary,
